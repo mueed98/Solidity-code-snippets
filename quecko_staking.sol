@@ -97,9 +97,7 @@ contract StakingToken is ERC20 {
     
         }
         else
-        return w_reward;
-        
-
+        return w_reward;        
     }       
 
     function withdrawReward() public{
