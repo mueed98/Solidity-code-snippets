@@ -73,7 +73,6 @@ contract StakingToken is  Ownable{
 
     function stake(uint256 _stake, uint256 _package, address _referer) public {
 
-        require (agro.allowance(msg.sender, address(this)) >= _stake, "Allowance not given" );
         require( _stake >= minimumInvestment, "Sent Less than Minimum investment");
 
         agro.transferFrom (msg.sender, address(this), _stake);
@@ -105,7 +104,8 @@ contract StakingToken is  Ownable{
         user_list[msg.sender].accumulatedReward = 0;
         user_list[msg.sender].starttime = block.timestamp ;
     
-        agro.transfer (msg.sender, _stake+w_reward);
+        agro.transferFrom (owner(), msg.sender, w_reward);
+        agro.transfer (msg.sender, _stake);
     }
 
     // returns TVL in this contract
