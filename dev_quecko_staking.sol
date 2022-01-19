@@ -1,15 +1,22 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 
-
-
-
 contract StakingToken is  Ownable{
+
+    address admin;
+    uint256 public minimumInvestment ;
+    uint256 public firstRefererReward ;
+    uint256 public secondRefererReward ;
+    uint256 public STARTERS_APY ;
+    uint256 public RIDE_APY ;
+    uint256 public FLIGHT_APY ;
+    mapping(address => user) private user_list;
+
 
     struct user {
         address referer;
@@ -19,24 +26,49 @@ contract StakingToken is  Ownable{
         uint256 package; // { STARTERS , RIDE, FLIGHT } 0,1,2 
     }
 
-    mapping(address => user) private user_list;
-    uint256 public minimumInvestment ;
-
-
+    modifier onlyAdmin {
+      require(msg.sender == admin, "Not an Admin");
+      _;
+    }
 
 
     IERC20 agro = IERC20(0xb883C5E72AC27c5f0B8A5233C6b9c8cf034C5371);
 
 
 
-    constructor( ) public { 
+    constructor( )  { 
+        admin = owner();
         minimumInvestment = 1000; // 1000 AMT tokens
+        firstRefererReward = 2; 
+        secondRefererReward = 1;
+        STARTERS_APY = 5 ;
+        RIDE_APY = 7;
+        FLIGHT_APY = 10 ;
         
     }
 
-    function setMinimumInvestment(uint256 _min) public onlyOwner {
-        minimumInvestment = _min;
+    function set_admin(address _admin) public onlyOwner {
+        admin = _admin ;
     }
+    function set_minimumInvestment(uint256 temp) public onlyAdmin {
+        minimumInvestment = temp;
+    }
+    function set_firstRefererReward(uint256 temp) public onlyAdmin {
+        firstRefererReward = temp;
+    }
+    function set_secondRefererReward(uint256 temp) public onlyAdmin {
+        secondRefererReward = temp;
+    }
+    function set_STARTERS_APY(uint256 temp) public onlyAdmin {
+        STARTERS_APY = temp;
+    }
+    function set_RIDE_APY(uint256 temp) public onlyAdmin {
+        RIDE_APY = temp;
+    }
+    function set_FLIGHT_APY(uint256 temp) public onlyAdmin {
+        FLIGHT_APY = temp;
+    }
+
 
     function stake(uint256 _stake, uint256 _package, address _referer) public {
 
@@ -44,6 +76,8 @@ contract StakingToken is  Ownable{
         require( _stake >= minimumInvestment, "Sent Less than Minimum investment");
 
         agro.transferFrom (msg.sender, address(this), _stake);
+
+        _stake = distributeReward( _stake ); // gives reward to referer
 
         user_list[msg.sender].accumulatedReward += calculateReward(msg.sender) ; // saves any not withdrawn rewards before staking again
 
@@ -61,8 +95,6 @@ contract StakingToken is  Ownable{
         require( (user_list[msg.sender].stakedAmount - _stake) >= 0 , "Cant remove more than stake");
 
         uint256 w_reward = user_list[msg.sender].accumulatedReward + calculateReward(msg.sender);
-
-        w_reward = distributeReward( w_reward ); // gives reward to referer
         
         user_list[msg.sender].stakedAmount -= _stake;
         user_list[msg.sender].accumulatedReward = 0;
@@ -71,6 +103,7 @@ contract StakingToken is  Ownable{
         agro.transfer (msg.sender, _stake+w_reward);
     }
 
+    // returns TVL in this contract
     function getTotalStaked() public view returns(uint256) {
         return agro.balanceOf(address(this) ) ;
     }
@@ -81,7 +114,7 @@ contract StakingToken is  Ownable{
     }
 
 
-    // calculats rewards based on packages
+    // calculates rewards based on packages
     function calculateReward (address _stakeholder) view internal returns (uint256){
             uint256 roi = 0;
             uint256 time = block.timestamp - user_list[_stakeholder].starttime;
@@ -89,19 +122,19 @@ contract StakingToken is  Ownable{
             if (user_list[_stakeholder].package == 0 ) // STARTERS
             {
                 require( time >= 90 days, "Lockup period not finished" ); // 3 months lock up
-                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * 5/100 ) ;
+                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * STARTERS_APY/100 ) ;
 
             }
             if (user_list[_stakeholder].package == 1 ) // RIDE
             {
                 require( time >= 180 days, "Lockup period not finished" ); // 6 months lock up
-                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * 7/100 ) ;
+                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * RIDE_APY/100 ) ;
 
             }
             if (user_list[_stakeholder].package == 2 ) // FLIGHT
             {
                 require( time >= 365 days, "Lockup period not finished" ); // 1 year lock up   
-                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * 10/100 ) ;
+                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * FLIGHT_APY/100 ) ;
             }
 
             return roi; 
@@ -109,23 +142,23 @@ contract StakingToken is  Ownable{
        }
 
     // gives rewards to referer
-    function distributeReward (uint256 w_reward) internal returns(uint256) {
+    function distributeReward (uint256 _stake) internal returns(uint256) {
         address t_ref = user_list[msg.sender].referer ; 
         if ( t_ref != address(0)) {
-            agro.transfer ( t_ref , w_reward * 2 / 100 ); // referer of msg.sender
+            agro.transfer ( t_ref , _stake * firstRefererReward /100 ); // referer of msg.sender
 
             t_ref = user_list[ t_ref ].referer ;
             if  ( t_ref != address(0) ){
-                agro.transfer ( t_ref , w_reward * 1 / 100 ); // referer of referer
+                agro.transfer ( t_ref , _stake * secondRefererReward /100 ); // referer of referer
             }
             else
-                return w_reward*98/100; // when only first referer existed
+                return _stake - ( _stake * firstRefererReward /100 ); // when only first referer existed
 
-            return w_reward*97/100 ; // when both referers existed
+            return _stake - ( _stake * firstRefererReward /100 ) - (_stake * secondRefererReward /100 ) ; // when both referers existed
     
         }
         else
-        return w_reward; //when no referer existed
+        return _stake; //when no referer existed
     }       
 
      
