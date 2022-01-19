@@ -19,6 +19,7 @@ contract StakingToken is  Ownable{
 
 
     struct user {
+        bool givenToReferer; 
         address referer;
         uint256 accumulatedReward;
         uint256 stakedAmount;
@@ -32,7 +33,7 @@ contract StakingToken is  Ownable{
     }
 
 
-    IERC20 agro = IERC20(0xb883C5E72AC27c5f0B8A5233C6b9c8cf034C5371);
+    IERC20 agro = IERC20(0xedBe70ef62b74730215728eD6B3F1f8705E3c58B);
 
 
 
@@ -77,7 +78,11 @@ contract StakingToken is  Ownable{
 
         agro.transferFrom (msg.sender, address(this), _stake);
 
+        if ( user_list[msg.sender].givenToReferer == false ) // only gives reward to referer when false
+        {
         _stake = distributeReward( _stake ); // gives reward to referer
+        user_list[msg.sender].givenToReferer = true ; // turns it true when reward is given
+        }
 
         user_list[msg.sender].accumulatedReward += calculateReward(msg.sender) ; // saves any not withdrawn rewards before staking again
 
