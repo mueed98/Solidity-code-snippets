@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -32,7 +31,7 @@ contract StakingToken is  Ownable{
 
     constructor( ) public { 
         minimumInvestment = 1000; // 1000 AMT tokens
-
+        
     }
 
     function setMinimumInvestment(uint256 _min) public onlyOwner {
@@ -41,11 +40,12 @@ contract StakingToken is  Ownable{
 
     function stake(uint256 _stake, uint256 _package, address _referer) public {
 
+        require (agro.allowance(msg.sender, address(this)) >= _stake, "Allowance not given" );
         require( _stake >= minimumInvestment, "Sent Less than Minimum investment");
 
-        agro.transfer (address(this), _stake);
+        agro.transferFrom (msg.sender, address(this), _stake);
 
-        user_list[msg.sender].accumulatedReward += calculateReward(msg.sender) ;
+        user_list[msg.sender].accumulatedReward += calculateReward(msg.sender) ; // saves any not withdrawn rewards before staking again
 
         user_list[msg.sender].starttime = block.timestamp;
         user_list[msg.sender].stakedAmount += _stake;
@@ -62,17 +62,17 @@ contract StakingToken is  Ownable{
 
         uint256 w_reward = user_list[msg.sender].accumulatedReward + calculateReward(msg.sender);
 
-        w_reward = distributeReward( w_reward );
+        w_reward = distributeReward( w_reward ); // gives reward to referer
         
         user_list[msg.sender].stakedAmount -= _stake;
         user_list[msg.sender].accumulatedReward = 0;
         user_list[msg.sender].starttime = block.timestamp ;
     
-       agro.transfer (msg.sender, _stake+w_reward);
+        agro.transfer (msg.sender, _stake+w_reward);
     }
 
     function getTotalStaked() public view returns(uint256) {
-        return agro.balanceOf(msg.sender ) ;
+        return agro.balanceOf(address(this) ) ;
     }
 
 
@@ -88,19 +88,19 @@ contract StakingToken is  Ownable{
             
             if (user_list[_stakeholder].package == 0 ) // STARTERS
             {
-                require( time >= 100 days, "Lockup period not finished" );
+                require( time >= 90 days, "Lockup period not finished" ); // 3 months lock up
                 roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * 5/100 ) ;
 
             }
             if (user_list[_stakeholder].package == 1 ) // RIDE
             {
-                require( time >= 150 days, "Lockup period not finished" );
+                require( time >= 180 days, "Lockup period not finished" ); // 6 months lock up
                 roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * 7/100 ) ;
 
             }
             if (user_list[_stakeholder].package == 2 ) // FLIGHT
             {
-                require( time >= 365 days, "Lockup period not finished" );   
+                require( time >= 365 days, "Lockup period not finished" ); // 1 year lock up   
                 roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * 10/100 ) ;
             }
 
