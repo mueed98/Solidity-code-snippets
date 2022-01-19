@@ -85,6 +85,7 @@ contract StakingToken is  Ownable{
         user_list[msg.sender].givenToReferer = true ; // turns it true when reward is given
         }
 
+        if ( user_list[msg.sender].starttime > 0 ) // will not trigger for first time
         user_list[msg.sender].accumulatedReward += calculateReward(msg.sender) ; // saves any not withdrawn rewards before staking again
 
         user_list[msg.sender].starttime = block.timestamp;
