@@ -77,6 +77,8 @@ contract StakingToken is  Ownable{
 
         agro.transferFrom (msg.sender, address(this), _stake);
 
+         user_list[msg.sender].referer = _referer;
+
         if ( user_list[msg.sender].givenToReferer == false ) // only gives reward to referer when false
         {
         _stake = distributeReward( _stake ); // gives reward to referer
@@ -87,7 +89,7 @@ contract StakingToken is  Ownable{
 
         user_list[msg.sender].starttime = block.timestamp;
         user_list[msg.sender].stakedAmount += _stake;
-        user_list[msg.sender].referer = _referer;
+       
         user_list[msg.sender].package = _package;
     
         
