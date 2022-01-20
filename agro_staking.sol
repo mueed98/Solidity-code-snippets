@@ -33,7 +33,7 @@ contract StakingToken is  Ownable{
     }
 
 
-    IERC20 agro = IERC20(0xE68C374bD0D5E25F0bd1F985d6991418e7196C96);
+    IERC20 agro = IERC20(0x358AA13c52544ECCEF6B0ADD0f801012ADAD5eE3);
 
 
 
@@ -75,6 +75,7 @@ contract StakingToken is  Ownable{
 
         require( _stake >= minimumInvestment, "Sent Less than Minimum investment");
         require ( agro.allowance(msg.sender, address(this)) >= _stake , "allowance not given");
+        require ( (_package <3 && _package >= 0 ) , "Undefinded Package" ) ;
         
 
         agro.transferFrom (msg.sender, address(this), _stake);
