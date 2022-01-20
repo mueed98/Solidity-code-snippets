@@ -74,6 +74,8 @@ contract StakingToken is  Ownable{
     function stake(uint256 _stake, uint256 _package, address _referer) public {
 
         require( _stake >= minimumInvestment, "Sent Less than Minimum investment");
+        require ( agro.allowance(msg.sender, address(this)) >= _stake , "allowance not given");
+        
 
         agro.transferFrom (msg.sender, address(this), _stake);
 
