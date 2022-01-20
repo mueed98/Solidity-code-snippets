@@ -33,7 +33,7 @@ contract StakingToken is  Ownable{
     }
 
 
-    IERC20 agro = IERC20(0xedBe70ef62b74730215728eD6B3F1f8705E3c58B);
+    IERC20 agro = IERC20(0xE68C374bD0D5E25F0bd1F985d6991418e7196C96);
 
 
 
@@ -88,9 +88,10 @@ contract StakingToken is  Ownable{
         }
 
         if ( user_list[msg.sender].starttime > 0 ) // will not trigger for first time
-        user_list[msg.sender].accumulatedReward += calculateReward(msg.sender) ; // saves any not withdrawn rewards before staking again
+        user_list[msg.sender].accumulatedReward += stake_calculateReward(msg.sender) ; // saves any not withdrawn rewards before staking again
 
         user_list[msg.sender].starttime = block.timestamp;
+
         user_list[msg.sender].stakedAmount += _stake;
        
         user_list[msg.sender].package = _package;
@@ -103,7 +104,7 @@ contract StakingToken is  Ownable{
         require ( stakeOf(msg.sender) > 0 , "Nothing staked" ) ;
         require( (user_list[msg.sender].stakedAmount - _stake) >= 0 , "Cant remove more than stake");
 
-        uint256 w_reward = user_list[msg.sender].accumulatedReward + calculateReward(msg.sender);
+        uint256 w_reward = user_list[msg.sender].accumulatedReward + unStake_calculateReward(msg.sender);
         
         user_list[msg.sender].stakedAmount -= _stake;
         user_list[msg.sender].accumulatedReward = 0;
@@ -125,7 +126,34 @@ contract StakingToken is  Ownable{
 
 
     // calculates rewards based on packages
-    function calculateReward (address _stakeholder) view internal returns (uint256){
+    function stake_calculateReward (address _stakeholder) view internal returns (uint256){
+            uint256 roi = 0;
+            uint256 time = block.timestamp - user_list[_stakeholder].starttime;
+            
+            if (user_list[_stakeholder].package == 0 ) // STARTERS
+            {
+                if ( time >= 90 days) // 3 months lock up
+                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * STARTERS_APY/100 ) ;
+
+            }
+            if (user_list[_stakeholder].package == 1 ) // RIDE
+            {
+                if( time >= 180 days) // 6 months lock up
+                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * RIDE_APY/100 ) ;
+
+            }
+            if (user_list[_stakeholder].package == 2 ) // FLIGHT
+            {
+                if( time >= 365 days ) // 1 year lock up   
+                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * FLIGHT_APY/100 ) ;
+            }
+
+            return roi; 
+
+       }
+
+       // calculates rewards based on packages
+    function unStake_calculateReward (address _stakeholder) view internal returns (uint256){
             uint256 roi = 0;
             uint256 time = block.timestamp - user_list[_stakeholder].starttime;
             
