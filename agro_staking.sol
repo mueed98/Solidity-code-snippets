@@ -15,6 +15,9 @@ contract StakingToken is  Ownable{
     uint256 public STARTERS_APY ;
     uint256 public RIDE_APY ;
     uint256 public FLIGHT_APY ;
+    uint256 public STARTERS_time;
+    uint256 public RIDE_time;
+    uint256 public FLIGHT_time;
     mapping(address => user) private user_list;
 
 
@@ -33,7 +36,7 @@ contract StakingToken is  Ownable{
     }
 
 
-    IERC20 agro = IERC20(0xE68C374bD0D5E25F0bd1F985d6991418e7196C96);
+    IERC20 agro = IERC20(0x8C84c191dC54096a471ef3E16a3D1F982ed8687C);
 
 
 
@@ -42,15 +45,27 @@ contract StakingToken is  Ownable{
         minimumInvestment = 1000; // 1000 AMT tokens
         firstRefererReward = 2; 
         secondRefererReward = 1;
+
         STARTERS_APY = 5 ;
         RIDE_APY = 7;
         FLIGHT_APY = 10 ;
+
+        STARTERS_time = 90 days;
+        RIDE_time = 180 days;
+        FLIGHT_time = 365 days ;
         
     }
 
     function set_admin(address _admin) public onlyOwner {
         admin = _admin ;
     }
+
+    function set_lockup(uint256 _starter, uint256 _ride, uint256 _flight) public onlyAdmin {
+        STARTERS_time = _starter;
+        RIDE_time = _ride;
+        FLIGHT_time = _flight ;
+    }
+
     function set_minimumInvestment(uint256 temp) public onlyAdmin {
         minimumInvestment = temp;
     }
@@ -60,15 +75,12 @@ contract StakingToken is  Ownable{
     function set_secondRefererReward(uint256 temp) public onlyAdmin {
         secondRefererReward = temp;
     }
-    function set_STARTERS_APY(uint256 temp) public onlyAdmin {
-        STARTERS_APY = temp;
+    function set_apy(uint256 temp0, uint256 temp1, uint256 temp2) public onlyAdmin {
+        STARTERS_APY = temp0;
+        RIDE_APY = temp1;
+        FLIGHT_APY = temp2;
     }
-    function set_RIDE_APY(uint256 temp) public onlyAdmin {
-        RIDE_APY = temp;
-    }
-    function set_FLIGHT_APY(uint256 temp) public onlyAdmin {
-        FLIGHT_APY = temp;
-    }
+
 
 
     function stake(uint256 _stake, uint256 _package, address _referer) public {
@@ -111,7 +123,7 @@ contract StakingToken is  Ownable{
         user_list[msg.sender].accumulatedReward = 0;
         user_list[msg.sender].starttime = block.timestamp ;
     
-        agro.transferFrom (owner(), msg.sender, w_reward);
+        agro.transferFrom (admin, msg.sender, w_reward);
         agro.transfer (msg.sender, _stake);
     }
 
@@ -133,19 +145,19 @@ contract StakingToken is  Ownable{
             
             if (user_list[_stakeholder].package == 0 ) // STARTERS
             {
-                if ( time >= 90 days) // 3 months lock up
+                if ( time >= STARTERS_time) // 3 months lock up
                 roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * STARTERS_APY/100 ) ;
 
             }
             if (user_list[_stakeholder].package == 1 ) // RIDE
             {
-                if( time >= 180 days) // 6 months lock up
+                if( time >= RIDE_time) // 6 months lock up
                 roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * RIDE_APY/100 ) ;
 
             }
             if (user_list[_stakeholder].package == 2 ) // FLIGHT
             {
-                if( time >= 365 days ) // 1 year lock up   
+                if( time >= FLIGHT_time ) // 1 year lock up   
                 roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * FLIGHT_APY/100 ) ;
             }
 
@@ -160,19 +172,19 @@ contract StakingToken is  Ownable{
             
             if (user_list[_stakeholder].package == 0 ) // STARTERS
             {
-                require( time >= 90 days, "Lockup period not finished" ); // 3 months lock up
+                require( time >= STARTERS_time, "Lockup period not finished" ); // 3 months lock up
                 roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * STARTERS_APY/100 ) ;
 
             }
             if (user_list[_stakeholder].package == 1 ) // RIDE
             {
-                require( time >= 180 days, "Lockup period not finished" ); // 6 months lock up
+                require( time >= RIDE_time, "Lockup period not finished" ); // 6 months lock up
                 roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * RIDE_APY/100 ) ;
 
             }
             if (user_list[_stakeholder].package == 2 ) // FLIGHT
             {
-                require( time >= 365 days, "Lockup period not finished" ); // 1 year lock up   
+                require( time >= FLIGHT_time, "Lockup period not finished" ); // 1 year lock up   
                 roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * FLIGHT_APY/100 ) ;
             }
 
