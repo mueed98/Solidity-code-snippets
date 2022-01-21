@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 contract StakingToken is  Ownable{
 
     using Counters for Counters.Counter;
-    Counters.Counter public refererCounter;
+    Counters.Counter private refererCounter;
     mapping(address => bool ) private refererMap;
 
     address admin;
@@ -42,7 +42,7 @@ contract StakingToken is  Ownable{
     }
 
 
-    IERC20 agro = IERC20(0x02753d6D645cc11e05EFD65f1b96975F1960e102);
+    IERC20 agro = IERC20(0xd9145CCE52D386f254917e481eB44e9943F39138);
 
 
 
