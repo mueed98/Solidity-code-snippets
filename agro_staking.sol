@@ -4,9 +4,13 @@ pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract StakingToken is  Ownable{
+
+    using Counters for Counters.Counter;
+    Counters.Counter public refererCounter;
+    mapping(address => bool ) private refererMap;
 
     address admin;
     uint256 public minimumInvestment ;
@@ -36,7 +40,7 @@ contract StakingToken is  Ownable{
     }
 
 
-    IERC20 agro = IERC20(0x8C84c191dC54096a471ef3E16a3D1F982ed8687C);
+    IERC20 agro = IERC20(0x53A12C9196471d7F790cFA178f3A782eF89e42c5);
 
 
 
@@ -75,19 +79,37 @@ contract StakingToken is  Ownable{
     function set_secondRefererReward(uint256 temp) public onlyAdmin {
         secondRefererReward = temp;
     }
-    function set_apy(uint256 temp0, uint256 temp1, uint256 temp2) public onlyAdmin {
-        STARTERS_APY = temp0;
-        RIDE_APY = temp1;
-        FLIGHT_APY = temp2;
+    function set_apy(uint256 _STARTERS_APY, uint256 _RIDE_APY, uint256 _FLIGHT_APY) public onlyAdmin {
+        STARTERS_APY = _STARTERS_APY;
+        RIDE_APY = _RIDE_APY;
+        FLIGHT_APY = _FLIGHT_APY;
+    }
+
+        // returns TVL in this contract
+    function getTotalStaked() public view returns(uint256) {
+        return agro.balanceOf(address(this) ) ;
+    }
+
+    function getTotalReferers() public view returns(uint256) {
+        return refererCounter.current();
+    }
+
+    function stakeOf(address _stakeholder) public view returns(uint256) {
+        return user_list[_stakeholder].stakedAmount;
     }
 
 
 
     function stake(uint256 _stake, uint256 _package, address _referer) public {
 
-        require( _stake >= minimumInvestment, "Sent Less than Minimum investment");
+        require ( _stake >= minimumInvestment, "Sent Less than Minimum investment");
         require ( agro.allowance(msg.sender, address(this)) >= _stake , "allowance not given");
         require ( (_package <3 && _package >= 0 ) , "Undefinded Package" ) ;
+        
+        if ( refererMap[_referer] == false ) {
+            refererCounter.increment(); // increments when new referer is detected
+            refererMap[_referer] = true ;
+            }
         
 
         agro.transferFrom (msg.sender, address(this), _stake);
@@ -125,16 +147,6 @@ contract StakingToken is  Ownable{
     
         agro.transferFrom (admin, msg.sender, w_reward);
         agro.transfer (msg.sender, _stake);
-    }
-
-    // returns TVL in this contract
-    function getTotalStaked() public view returns(uint256) {
-        return agro.balanceOf(address(this) ) ;
-    }
-
-
-    function stakeOf(address _stakeholder) public view returns(uint256) {
-        return user_list[_stakeholder].stakedAmount;
     }
 
 
