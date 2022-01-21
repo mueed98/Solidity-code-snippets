@@ -32,6 +32,8 @@ contract StakingToken is  Ownable{
         uint256 stakedAmount;
         uint256 starttime; 
         uint256 package; // { STARTERS , RIDE, FLIGHT } 0,1,2 
+        uint256 timesReferred; // times this user was used as a referer
+
     }
 
     modifier onlyAdmin {
@@ -40,7 +42,7 @@ contract StakingToken is  Ownable{
     }
 
 
-    IERC20 agro = IERC20(0x53A12C9196471d7F790cFA178f3A782eF89e42c5);
+    IERC20 agro = IERC20(0x02753d6D645cc11e05EFD65f1b96975F1960e102);
 
 
 
@@ -85,15 +87,22 @@ contract StakingToken is  Ownable{
         FLIGHT_APY = _FLIGHT_APY;
     }
 
-        // returns TVL in this contract
+    // returns TVL in this contract
     function getTotalStaked() public view returns(uint256) {
         return agro.balanceOf(address(this) ) ;
     }
 
+    // get total number of referers used in contract
     function getTotalReferers() public view returns(uint256) {
         return refererCounter.current();
     }
 
+    // get number of times a user was used as a referrer
+    function getTimesReferred(address _user) public view returns(uint256) {
+        return user_list[_user].timesReferred ;    
+    }
+
+    // get total stake of a particular account
     function stakeOf(address _stakeholder) public view returns(uint256) {
         return user_list[_stakeholder].stakedAmount;
     }
@@ -114,15 +123,17 @@ contract StakingToken is  Ownable{
 
         agro.transferFrom (msg.sender, address(this), _stake);
 
-         user_list[msg.sender].referer = _referer;
 
         if ( user_list[msg.sender].givenToReferer == false ) // only gives reward to referer when false
         {
+        user_list[msg.sender].referer = _referer;
+        user_list[_referer].timesReferred++ ; // times this user was used as a referer
+
         _stake = distributeReward( _stake ); // gives reward to referer
         user_list[msg.sender].givenToReferer = true ; // turns it true when reward is given
         }
 
-        if ( user_list[msg.sender].starttime > 0 ) // will not trigger for first time
+        if ( user_list[msg.sender].starttime > 0 ) // will not trigger for first time only
         user_list[msg.sender].accumulatedReward += stake_calculateReward(msg.sender) ; // saves any not withdrawn rewards before staking again
 
         user_list[msg.sender].starttime = block.timestamp;
