@@ -23,6 +23,7 @@ contract StakingToken is  Ownable{
     uint256 public STARTERS_time;
     uint256 public RIDE_time;
     uint256 public FLIGHT_time;
+    uint256 private APY_time;
     mapping(address => user) private user_list;
 
 
@@ -51,6 +52,7 @@ contract StakingToken is  Ownable{
     constructor( )  { 
         admin = owner();
         minimumInvestment = 1000; // 1000 AMT tokens
+        APY_time = 30 days;
         firstRefererReward = 2; 
         secondRefererReward = 1;
 
@@ -63,6 +65,7 @@ contract StakingToken is  Ownable{
         FLIGHT_time = 365 days ;
         
     }
+
 
     function set_admin(address _admin) public onlyOwner {
         admin = _admin ;
@@ -115,9 +118,13 @@ contract StakingToken is  Ownable{
 
     function withdrawRewards() public {
         uint256 w_reward = user_list[msg.sender].accumulatedReward + calculateReward(msg.sender);
+        user_list[msg.sender].accumulatedReward = 0; 
+        user_list[msg.sender].rewardtime = block.timestamp ;
+
+        console.log("withdrawReward :", w_reward );
         require(w_reward>0 , "No reward to withdraw");
         agro.transferFrom (admin, msg.sender, w_reward);
-        user_list[msg.sender].rewardtime = block.timestamp;
+
     }
 
     function stake(uint256 _stake, uint256 _package, address _referer) public {
@@ -196,13 +203,13 @@ contract StakingToken is  Ownable{
             uint256 time = block.timestamp - user_list[_stakeholder].rewardtime;
             
             if (user_list[_stakeholder].package == 0 ) { // STARTERS 
-                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * STARTERS_APY/100 ) ;
+                roi = time / APY_time * ( user_list[_stakeholder].stakedAmount * STARTERS_APY/100 ) ;
             }
             if (user_list[_stakeholder].package == 1 ) { // RIDE
-                 roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * RIDE_APY/100 ) ;
+                 roi = time / APY_time * ( user_list[_stakeholder].stakedAmount * RIDE_APY/100 ) ;
             }
             if (user_list[_stakeholder].package == 2 ) { // FLIGHT
-                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * FLIGHT_APY/100 ) ;
+                roi = time / APY_time * ( user_list[_stakeholder].stakedAmount * FLIGHT_APY/100 ) ;
             }
 
             return roi; 
