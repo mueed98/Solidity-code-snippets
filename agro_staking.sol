@@ -5,6 +5,7 @@ pragma solidity 0.8.7;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "hardhat/console.sol";
 
 contract StakingToken is  Ownable{
 
@@ -114,6 +115,7 @@ contract StakingToken is  Ownable{
 
     function withdrawRewards() public {
         uint256 w_reward = user_list[msg.sender].accumulatedReward + calculateReward(msg.sender);
+        require(w_reward>0 , "No reward to withdraw");
         agro.transferFrom (admin, msg.sender, w_reward);
         user_list[msg.sender].rewardtime = block.timestamp;
     }
@@ -131,7 +133,7 @@ contract StakingToken is  Ownable{
         
 
         agro.transferFrom (msg.sender, address(this), _stake); // transferring stake to contract
-        agro.transferFrom (address(this), admin,  _stake*2/100); // 2% fee given to Admin
+        agro.transfer ( admin,  _stake*2/100); // 2% fee given to Admin
         _stake = _stake - _stake*2/100 ; // recomputes stake after giving 2% fee
 
 
@@ -163,10 +165,10 @@ contract StakingToken is  Ownable{
         require( (user_list[msg.sender].stakedAmount - _stake) >= 0 , "Cant remove more than stake");
 
         if ( isUnstakingBeforeLockup(msg.sender) == true){
+            console.log("Unstaking before Lockup");
 
             agro.transfer (msg.sender, _stake*50/100); //50% to User
             agro.transfer (admin, _stake*50/100); //50% Fine given to Admin
-
             user_list[msg.sender].stakedAmount -= _stake;
             user_list[msg.sender].accumulatedReward = 0;
         
