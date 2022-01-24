@@ -17,13 +17,16 @@ contract StakingToken is  Ownable{
     uint256 public minimumInvestment ;
     uint256 public firstRefererReward ;
     uint256 public secondRefererReward ;
+
     uint256 public STARTERS_APY ;
     uint256 public RIDE_APY ;
     uint256 public FLIGHT_APY ;
+
     uint256 public STARTERS_time;
     uint256 public RIDE_time;
     uint256 public FLIGHT_time;
-    uint256 private APY_time;
+
+    uint256 private APY_time; // APY calculted on per  day/month/year basis
     mapping(address => user) private user_list;
 
 
@@ -52,7 +55,7 @@ contract StakingToken is  Ownable{
     constructor( )  { 
         admin = owner();
         minimumInvestment = 1000; // 1000 AMT tokens
-        APY_time = 30 days;
+        APY_time = 30 days; 
         firstRefererReward = 2; 
         secondRefererReward = 1;
 
@@ -67,6 +70,7 @@ contract StakingToken is  Ownable{
     }
 
 
+
     function set_admin(address _admin) public onlyOwner {
         admin = _admin ;
     }
@@ -77,6 +81,9 @@ contract StakingToken is  Ownable{
         FLIGHT_time = _flight ;
     }
 
+    function set_apyCalculation(uint256 temp) public onlyAdmin {
+        APY_time = temp;
+    }
     function set_minimumInvestment(uint256 temp) public onlyAdmin {
         minimumInvestment = temp;
     }
@@ -140,8 +147,12 @@ contract StakingToken is  Ownable{
         
 
         agro.transferFrom (msg.sender, address(this), _stake); // transferring stake to contract
-        agro.transfer ( admin,  _stake*2/100); // 2% fee given to Admin
+        console.log("agro.balanceOf(address(this)) :", agro.balanceOf(address(this)) );
+        agro.transfer ( admin, _stake*2/100); // 2% fee to Admin
+
         _stake = _stake - _stake*2/100 ; // recomputes stake after giving 2% fee
+       
+        console.log("Stake left :", _stake );
 
 
         if ( user_list[msg.sender].givenToReferer == false ) // only gives reward to referer when false
@@ -185,6 +196,9 @@ contract StakingToken is  Ownable{
         uint256 w_reward = user_list[msg.sender].accumulatedReward + calculateReward(msg.sender);
 
         user_list[msg.sender].rewardtime = block.timestamp;
+
+        console.log("w_reward :", w_reward);
+        console.log("_stake :", _stake);
     
         agro.transferFrom (admin, msg.sender, w_reward);
         agro.transfer (msg.sender, _stake);
