@@ -1,115 +1,244 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.7;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract StakingToken is ERC20 {
+contract StakingToken is  Ownable{
+
+    using Counters for Counters.Counter;
+    Counters.Counter private refererCounter;
+    mapping(address => bool ) private refererMap;
+
+    address admin;
+    uint256 public minimumInvestment ;
+    uint256 public firstRefererReward ;
+    uint256 public secondRefererReward ;
+    uint256 public STARTERS_APY ;
+    uint256 public RIDE_APY ;
+    uint256 public FLIGHT_APY ;
+    uint256 public STARTERS_time;
+    uint256 public RIDE_time;
+    uint256 public FLIGHT_time;
+    mapping(address => user) private user_list;
+
 
     struct user {
+        bool givenToReferer; 
         address referer;
         uint256 accumulatedReward;
         uint256 stakedAmount;
         uint256 starttime; 
-    }
-
-    mapping(address => user) private user_list;
-
-    constructor( ) ERC20("Demo", "DEM")  public
-    { 
-        uint256 _supply = 100;
-        _mint(msg.sender, _supply);
-        transfer(0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2 , 50 );
-        createStake(50, 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2);
-        //removeStake(50);
-        withdrawReward();
-
+        uint256 package; // { STARTERS , RIDE, FLIGHT } 0,1,2 
+        uint256 timesReferred; // times this user was used as a referer
 
     }
 
-    // ---------- STAKES ----------
+    modifier onlyAdmin {
+      require(msg.sender == admin, "Not an Admin");
+      _;
+    }
 
-    /**
-     * @notice A method for a stakeholder to create a stake.
-     * @param _stake The size of the stake to be created.
-     */
-    function createStake(uint256 _stake, address _referer) public {
-        _burn(msg.sender, _stake);
 
-        //user_list[msg.sender].accumulatedReward += calculateReward(msg.sender) ;
-        user_list[msg.sender].starttime = block.timestamp;
+    IERC20 agro = IERC20(0xd9145CCE52D386f254917e481eB44e9943F39138);
 
-        user_list[msg.sender].stakedAmount += _stake;
-        user_list[msg.sender].referer = _referer;
+
+
+    constructor( )  { 
+        admin = owner();
+        minimumInvestment = 1000; // 1000 AMT tokens
+        firstRefererReward = 2; 
+        secondRefererReward = 1;
+
+        STARTERS_APY = 5 ;
+        RIDE_APY = 7;
+        FLIGHT_APY = 10 ;
+
+        STARTERS_time = 90 days;
+        RIDE_time = 180 days;
+        FLIGHT_time = 365 days ;
         
     }
 
-    /**
-     * @notice A method for a stakeholder to remove a stake.
-     * @param _stake The size of the stake to be removed.
-     */
-    function removeStake(uint256 _stake) public {
-        require ( stakeOf(msg.sender) > 0 , "Nothing staked" ) ;
-        require( (user_list[msg.sender].stakedAmount - _stake) >= 0 , "Cant remove more than stake");
-
-        uint256 w_reward = user_list[msg.sender].accumulatedReward + calculateReward(msg.sender);
-        w_reward = distributeReward(w_reward);
-        
-
-        
-        user_list[msg.sender].stakedAmount -= _stake;
-        user_list[msg.sender].accumulatedReward = 0;
-        user_list[msg.sender].starttime = block.timestamp ;
-
-        _mint(msg.sender, _stake + w_reward);
+    function set_admin(address _admin) public onlyOwner {
+        admin = _admin ;
     }
 
-    /**
-     * @notice A method to retrieve the stake for a stakeholder.
-     * @param _stakeholder The stakeholder to retrieve the stake for.
-     * @return uint256 The amount of wei staked.
-     */
+    function set_lockup(uint256 _starter, uint256 _ride, uint256 _flight) public onlyAdmin {
+        STARTERS_time = _starter;
+        RIDE_time = _ride;
+        FLIGHT_time = _flight ;
+    }
+
+    function set_minimumInvestment(uint256 temp) public onlyAdmin {
+        minimumInvestment = temp;
+    }
+    function set_firstRefererReward(uint256 temp) public onlyAdmin {
+        firstRefererReward = temp;
+    }
+    function set_secondRefererReward(uint256 temp) public onlyAdmin {
+        secondRefererReward = temp;
+    }
+    function set_apy(uint256 _STARTERS_APY, uint256 _RIDE_APY, uint256 _FLIGHT_APY) public onlyAdmin {
+        STARTERS_APY = _STARTERS_APY;
+        RIDE_APY = _RIDE_APY;
+        FLIGHT_APY = _FLIGHT_APY;
+    }
+
+    // returns TVL in this contract
+    function getTotalStaked() public view returns(uint256) {
+        return agro.balanceOf(address(this) ) ;
+    }
+
+    // get total number of referers used in contract
+    function getTotalReferers() public view returns(uint256) {
+        return refererCounter.current();
+    }
+
+    // get number of times a user was used as a referrer
+    function getTimesReferred(address _user) public view returns(uint256) {
+        return user_list[_user].timesReferred ;    
+    }
+
+    // get total stake of a particular account
     function stakeOf(address _stakeholder) public view returns(uint256) {
         return user_list[_stakeholder].stakedAmount;
     }
 
 
+
+    function stake(uint256 _stake, uint256 _package, address _referer) public {
+
+        require ( _stake >= minimumInvestment, "Sent Less than Minimum investment");
+        require ( agro.allowance(msg.sender, address(this)) >= _stake , "allowance not given");
+        require ( (_package <3 && _package >= 0 ) , "Undefinded Package" ) ;
+        
+        if ( refererMap[_referer] == false ) {
+            refererCounter.increment(); // increments when new referer is detected
+            refererMap[_referer] = true ;
+            }
+        
+
+        agro.transferFrom (msg.sender, address(this), _stake); // transferring stake to contract
+        agro.transferFrom (address(this), admin,  _stake*2/100); // 2% fee given to Admin
+        _stake = _stake - _stake*2/100 ; // recomputes stake after giving 2% fee
+
+
+        if ( user_list[msg.sender].givenToReferer == false ) // only gives reward to referer when false
+        {
+        user_list[msg.sender].referer = _referer;
+        user_list[_referer].timesReferred++ ; // times this user was used as a referer
+
+        _stake = distributeReward( _stake ); // gives reward to referer
+        user_list[msg.sender].givenToReferer = true ; // turns it true when reward is given
+        }
+
+        if ( user_list[msg.sender].starttime > 0 ) // will not trigger for first time only
+        user_list[msg.sender].accumulatedReward += stake_calculateReward(msg.sender) ; // saves any not withdrawn rewards before staking again
+
+        user_list[msg.sender].starttime = block.timestamp;
+
+        user_list[msg.sender].stakedAmount += _stake;
+       
+        user_list[msg.sender].package = _package;
     
-    function calculateReward (address _stakeholder) view internal returns (uint256){
-            //return (((block.timestamp - user_list[_stakeholder].starttime)/ 24 hours ) ) * 10 * user_list[_stakeholder].stakedAmount;  
-            return 10;   
+        
+    }
+
+
+    function unStake(uint256 _stake) public {
+        require ( stakeOf(msg.sender) > 0 , "Nothing staked" ) ;
+        require( (user_list[msg.sender].stakedAmount - _stake) >= 0 , "Cant remove more than stake");
+
+        uint256 w_reward = user_list[msg.sender].accumulatedReward + unStake_calculateReward(msg.sender);
+        
+        user_list[msg.sender].stakedAmount -= _stake;
+        user_list[msg.sender].accumulatedReward = 0;
+        user_list[msg.sender].starttime = block.timestamp ;
+    
+        agro.transferFrom (admin, msg.sender, w_reward);
+        agro.transfer (msg.sender, _stake);
+    }
+
+
+    // calculates rewards based on packages
+    function stake_calculateReward (address _stakeholder) view internal returns (uint256){
+            uint256 roi = 0;
+            uint256 time = block.timestamp - user_list[_stakeholder].starttime;
+            
+            if (user_list[_stakeholder].package == 0 ) // STARTERS
+            {
+                if ( time >= STARTERS_time) // 3 months lock up
+                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * STARTERS_APY/100 ) ;
+
+            }
+            if (user_list[_stakeholder].package == 1 ) // RIDE
+            {
+                if( time >= RIDE_time) // 6 months lock up
+                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * RIDE_APY/100 ) ;
+
+            }
+            if (user_list[_stakeholder].package == 2 ) // FLIGHT
+            {
+                if( time >= FLIGHT_time ) // 1 year lock up   
+                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * FLIGHT_APY/100 ) ;
+            }
+
+            return roi; 
 
        }
 
-    function distributeReward (uint256 w_reward) internal returns(uint256) {
+       // calculates rewards based on packages
+    function unStake_calculateReward (address _stakeholder) view internal returns (uint256){
+            uint256 roi = 0;
+            uint256 time = block.timestamp - user_list[_stakeholder].starttime;
+            
+            if (user_list[_stakeholder].package == 0 ) // STARTERS
+            {
+                require( time >= STARTERS_time, "Lockup period not finished" ); // 3 months lock up
+                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * STARTERS_APY/100 ) ;
+
+            }
+            if (user_list[_stakeholder].package == 1 ) // RIDE
+            {
+                require( time >= RIDE_time, "Lockup period not finished" ); // 6 months lock up
+                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * RIDE_APY/100 ) ;
+
+            }
+            if (user_list[_stakeholder].package == 2 ) // FLIGHT
+            {
+                require( time >= FLIGHT_time, "Lockup period not finished" ); // 1 year lock up   
+                roi = time / 30 days * ( user_list[_stakeholder].stakedAmount * FLIGHT_APY/100 ) ;
+            }
+
+            return roi; 
+
+       }
+
+    // gives rewards to referer
+    function distributeReward (uint256 _stake) internal returns(uint256) {
         address t_ref = user_list[msg.sender].referer ; 
         if ( t_ref != address(0)) {
-            _mint ( t_ref , w_reward * 2 / 100 );
+            agro.transfer ( t_ref , _stake * firstRefererReward /100 ); // referer of msg.sender
+
             t_ref = user_list[ t_ref ].referer ;
             if  ( t_ref != address(0) ){
-                _mint ( t_ref , w_reward * 1 / 100 );
+                agro.transfer ( t_ref , _stake * secondRefererReward /100 ); // referer of referer
             }
             else
-                return w_reward*98/100;
+                return _stake - ( _stake * firstRefererReward /100 ); // when only first referer existed
 
-            return w_reward*97/100 ;
+            return _stake - ( _stake * firstRefererReward /100 ) - (_stake * secondRefererReward /100 ) ; // when both referers existed
     
         }
         else
-        return w_reward;        
+        return _stake; //when no referer existed
     }       
 
-    function withdrawReward() public{
-        uint256 w_reward = user_list[msg.sender].accumulatedReward + calculateReward(msg.sender);
-        w_reward = distributeReward(w_reward);
-        require ( w_reward > 0 , "No reward to withdraw" ) ;
+     
 
-        user_list[msg.sender].accumulatedReward = 0;
-        user_list[msg.sender].starttime = block.timestamp ;
-
-        _mint(msg.sender, w_reward);
-    }
 
 
 }
