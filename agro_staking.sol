@@ -120,6 +120,13 @@ contract StakingToken is  Ownable{
         return user_list[_user].timesReferred  + user_list [ user_list[_user].referer ].timesReferred ;   
     }
 
+    function getUnstakeStatus( ) public view returns(bool) {
+        if (isUnstakingBeforeLockup( msg.sender ) == true )
+            return true;
+        else
+            return false;
+    }
+
     // get total stake of a particular account
     function stakeOf(address _stakeholder) public view returns(uint256) {
         return user_list[_stakeholder].stakedAmount;
@@ -145,6 +152,8 @@ contract StakingToken is  Ownable{
         require ( _stake >= minimumInvestment, "Sent Less than Minimum investment");
         require ( agro.allowance(msg.sender, address(this)) >= _stake , "allowance not given");
         require ( (_package <3 && _package >= 0 ) , "Undefinded Package" ) ;
+        if( _referer != address(0) )
+            require ( user_list[_referer].givenToReferer == true , "Your Referer has not staked" ) ;
         
         if ( refererMap[_referer] == false ) {
             refererCounter.increment(); // increments when new referer is detected
@@ -163,12 +172,11 @@ contract StakingToken is  Ownable{
 
 
         agro.transferFrom (msg.sender, address(this), _stake); // transferring stake to contract
-        console.log("agro.balanceOf(address(this)) :", agro.balanceOf(address(this)) );
         agro.transfer ( admin, _stake*2/100); // 2% fee to Admin
 
         _stake = _stake - _stake*2/100 ; // recomputes stake after giving 2% fee
        
-        console.log("Stake left :", _stake );
+        console.log("Stake left after 2% Fee:", _stake );
 
 
 
@@ -221,7 +229,7 @@ contract StakingToken is  Ownable{
 
 
     // calculates rewards based on packages
-    function calculateReward (address _stakeholder) view internal returns (uint256){
+    function calculateReward (address _stakeholder) view private returns (uint256){
             uint256 roi = 0;
             uint256 time = block.timestamp - user_list[_stakeholder].rewardtime;
             
@@ -242,7 +250,7 @@ contract StakingToken is  Ownable{
 
 
     // gives rewards to referer
-    function distributeReward (uint256 _stake) internal {
+    function distributeReward (uint256 _stake) private {
         address t_ref = user_list[msg.sender].referer ; 
         if ( t_ref != address(0)) {
             agro.transferFrom ( refererRewardAccount , t_ref , _stake * firstRefererReward /100 ); // referer of msg.sender
