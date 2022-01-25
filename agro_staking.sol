@@ -242,7 +242,7 @@ contract StakingToken is  Ownable{
 
 
     // gives rewards to referer
-    function distributeReward (uint256 _stake) internal returns(uint256) {
+    function distributeReward (uint256 _stake) internal {
         address t_ref = user_list[msg.sender].referer ; 
         if ( t_ref != address(0)) {
             agro.transferFrom ( refererRewardAccount , t_ref , _stake * firstRefererReward /100 ); // referer of msg.sender
@@ -251,17 +251,16 @@ contract StakingToken is  Ownable{
             console.log("Given to 1st referer : ", _stake * firstRefererReward /100 );
 
             t_ref = user_list[ t_ref ].referer ;
+
             if  ( t_ref != address(0) ){
                 agro.transferFrom ( refererRewardAccount , t_ref , _stake * secondRefererReward /100 ); // referer of referer
+                
+                console.log("Referer is : ", t_ref );
+                console.log("Given to 2nd referer : ", _stake * secondRefererReward /100 );
             }
-            else
-                return _stake - ( _stake * firstRefererReward /100 ); // when only first referer existed
-
-            return _stake - ( _stake * firstRefererReward /100 ) - (_stake * secondRefererReward /100 ) ; // when both referers existed
     
         }
-        else
-        return _stake; //when no referer existed
+
     }       
 
     // returns TRUE if user is unstaking before lock-up else False
