@@ -49,7 +49,7 @@ contract StakingToken is  Ownable{
     }
 
 
-    IERC20 agro = IERC20(0xd9145CCE52D386f254917e481eB44e9943F39138);
+    IERC20 agro = IERC20(0xc36e9585D3eDdd9BEE67aA809775e330F665f102);
 
 
 
