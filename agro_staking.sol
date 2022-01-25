@@ -14,6 +14,7 @@ contract StakingToken is  Ownable{
     mapping(address => bool ) private refererMap;
 
     address admin;
+    address refererRewardAccount ;
     uint256 public minimumInvestment ;
     uint256 public firstRefererReward ;
     uint256 public secondRefererReward ;
@@ -54,6 +55,7 @@ contract StakingToken is  Ownable{
 
     constructor( )  { 
         admin = owner();
+        refererRewardAccount = owner();
         minimumInvestment = 1000; // 1000 AMT tokens
         APY_time = 30 days; 
         firstRefererReward = 2; 
@@ -73,6 +75,10 @@ contract StakingToken is  Ownable{
 
     function set_admin(address _admin) public onlyOwner {
         admin = _admin ;
+    }
+
+    function set_refererRewardAccount(address _refererRewardAccount) public onlyAdmin {
+        refererRewardAccount = _refererRewardAccount ;
     }
 
     function set_lockup(uint256 _starter, uint256 _ride, uint256 _flight) public onlyAdmin {
@@ -111,7 +117,7 @@ contract StakingToken is  Ownable{
 
     // get number of times a user was used as a referrer
     function getTimesReferred(address _user) public view returns(uint256) {
-        return user_list[_user].timesReferred ;    
+        return user_list[_user].timesReferred  + user_list [ user_list[_user].referer ].timesReferred ;   
     }
 
     // get total stake of a particular account
@@ -145,6 +151,16 @@ contract StakingToken is  Ownable{
             refererMap[_referer] = true ;
             }
         
+        if ( user_list[msg.sender].givenToReferer == false ) // only gives reward to referer when false
+        {
+        user_list[msg.sender].referer = _referer;
+        user_list[_referer].timesReferred++ ; // times this user was used as a referer
+
+        distributeReward( _stake ); // gives reward to referer
+        
+        user_list[msg.sender].givenToReferer = true ; // turns it true when reward is given
+        }
+
 
         agro.transferFrom (msg.sender, address(this), _stake); // transferring stake to contract
         console.log("agro.balanceOf(address(this)) :", agro.balanceOf(address(this)) );
@@ -155,14 +171,7 @@ contract StakingToken is  Ownable{
         console.log("Stake left :", _stake );
 
 
-        if ( user_list[msg.sender].givenToReferer == false ) // only gives reward to referer when false
-        {
-        user_list[msg.sender].referer = _referer;
-        user_list[_referer].timesReferred++ ; // times this user was used as a referer
 
-        _stake = distributeReward( _stake ); // gives reward to referer
-        user_list[msg.sender].givenToReferer = true ; // turns it true when reward is given
-        }
 
         if ( user_list[msg.sender].starttime > 0 ) // will not trigger for first time only
         user_list[msg.sender].accumulatedReward += calculateReward(msg.sender) ; // saves any not withdrawn rewards before staking again
@@ -236,11 +245,14 @@ contract StakingToken is  Ownable{
     function distributeReward (uint256 _stake) internal returns(uint256) {
         address t_ref = user_list[msg.sender].referer ; 
         if ( t_ref != address(0)) {
-            agro.transfer ( t_ref , _stake * firstRefererReward /100 ); // referer of msg.sender
+            agro.transferFrom ( refererRewardAccount , t_ref , _stake * firstRefererReward /100 ); // referer of msg.sender
+           
+            console.log("Referer is : ", t_ref );
+            console.log("Given to 1st referer : ", _stake * firstRefererReward /100 );
 
             t_ref = user_list[ t_ref ].referer ;
             if  ( t_ref != address(0) ){
-                agro.transfer ( t_ref , _stake * secondRefererReward /100 ); // referer of referer
+                agro.transferFrom ( refererRewardAccount , t_ref , _stake * secondRefererReward /100 ); // referer of referer
             }
             else
                 return _stake - ( _stake * firstRefererReward /100 ); // when only first referer existed
