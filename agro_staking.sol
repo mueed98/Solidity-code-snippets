@@ -115,6 +115,7 @@ contract StakingToken is  Ownable{
             
         if (user_list[_user].package==1)
             return user_list[_user].starttime+RIDE_time;
+
         if (user_list[_user].package==2)
             return user_list[_user].starttime+FLIGHT_time;
     
@@ -135,8 +136,8 @@ contract StakingToken is  Ownable{
         return user_list[_user].timesReferred  + user_list [ user_list[_user].referer ].timesReferred ;   
     }
 
-    function getUnstakeStatus( ) public view returns(bool) {
-        if (isUnstakingBeforeLockup( msg.sender ) == true )
+    function getUnstakeStatus(address _user ) public view returns(bool) {
+        if (isUnstakingBeforeLockup( _user ) == true ) 
             return true;
         else
             return false;
@@ -147,8 +148,8 @@ contract StakingToken is  Ownable{
         return user_list[_stakeholder].stakedAmount;
     }
 
-    function currentRewards( ) public view returns(uint256) {
-        return  user_list[msg.sender].accumulatedReward + calculateReward(msg.sender);
+    function currentRewards(address _user ) public view returns(uint256) {
+        return  user_list[_user].accumulatedReward + calculateReward(_user);
     }
 
     function withdrawRewards() public {
