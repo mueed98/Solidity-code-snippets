@@ -105,6 +105,21 @@ contract StakingToken is  Ownable{
         FLIGHT_APY = _FLIGHT_APY;
     }
 
+    function getStakeStartTime(address _user) public view returns(uint256) {
+        return user_list[_user].starttime;
+    }
+
+    function getStakeEndTime(address _user) public view returns(uint256 temp) {
+        if (user_list[_user].package==0)
+            return user_list[_user].starttime+STARTERS_time;
+            
+        if (user_list[_user].package==1)
+            return user_list[_user].starttime+RIDE_time;
+        if (user_list[_user].package==2)
+            return user_list[_user].starttime+FLIGHT_time;
+    
+    }
+
     // returns TVL in this contract
     function getTotalStaked() public view returns(uint256) {
         return agro.balanceOf(address(this) ) ;
