@@ -145,14 +145,17 @@ contract BearNFT is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         if ( preSaleIsON = true )
             require( (mintedNFTids.length + tokenUriList.length) < mintsDuringWhiteList , "Can't mint more than mintsDuringWhiteList" );
         
-        uint256 fee = mintPrice;
+        uint256 fee = mintPrice*tokenUriList.length;
         if ( isWhiteList[msg.sender] == true)
-            fee = whitelist_mintPrice;
+            fee = whitelist_mintPrice*tokenUriList.length;
 
+        // Payment Flow
+        require( msg.value >= fee , "Sent less than Fee");
         (bool sent,) = admin.call{value: fee}("");
         require(sent == true, "Payment to Admin unsuccessful");
         emit payment_Sent(sent);        
 
+        // Minting Flow
         for (uint256 i=0; i<tokenUriList.length; i++){
             require(isUniqueNFT(bytes(tokenUriList[i])) == true, "NFT not unique");
             NFT_hashes[keccak256(bytes(tokenUriList[i]))] = true;
