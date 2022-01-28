@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract BearNFT is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
+contract BearNFT is ERC721,  Ownable {
     using Counters for Counters.Counter;
     Counters.Counter public _tokenIdCounter;
 
@@ -175,29 +173,17 @@ contract BearNFT is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     function safeMint ( address to, string memory tokenUri) private returns (uint256)
     {
         _tokenIdCounter.increment();
-        _safeMint(to, _tokenIdCounter.current());
-        _setTokenURI(_tokenIdCounter.current(), tokenUri);
+        _safeMint(to, _tokenIdCounter.current(), bytes(tokenUri));
         _tokenURIs[_tokenIdCounter.current()] = tokenUri;
         emit TokenMinted(_tokenIdCounter.current(), to);
         return _tokenIdCounter.current();
     }
 
-
-
-
-
-    function transferNFT( address _from, address _to, uint256 _id ) internal {
-            this.safeTransferFrom( _from  , _to , _id );
-    }
-
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage){
-        require(msg.sender == ownerOf(tokenId));
-        super._burn(tokenId);
-    }
-
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory){
+    function tokenURI(uint256 tokenId) public view override(ERC721) returns (string memory){
         return super.tokenURI(tokenId);
     }
+
+
 
      /*
     * checks if NFT tokenURI to be added is unique or not
