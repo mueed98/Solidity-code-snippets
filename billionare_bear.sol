@@ -54,11 +54,17 @@ contract BearNFT is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
         set_mintsDuringWhiteList(1000);
         setReservedCount( 20 );
 
-        address[] memory temp = new address[](1);
-        temp[0] = msg.sender;
-        addWhiteList ( temp );
-
      }
+
+    // function test() public {
+    //     string [] memory temp = new string[](2);
+    //     temp[0] = "a";
+    //     setReservedCount( 2 ) ;
+    //     reserveMint ( temp ) ;
+    //     temp[1] = "b"; 
+    //     reserveMint ( temp ) ;
+    
+    // }
 
     function setAdmin (address _admin) public onlyOwner {
         admin = _admin;
@@ -119,7 +125,7 @@ contract BearNFT is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     }
     
 
-    function reserveMint(string [] memory tokenUriList) external onlyAdmin{
+    function reserveMint(string [] memory tokenUriList) public onlyAdmin{
         require( tokenUriList.length <= reserveCounter, "Can't mint more than reserved" ) ;
         
         for (uint256 i=0; i<tokenUriList.length; i++){
