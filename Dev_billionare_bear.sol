@@ -135,7 +135,7 @@ contract BearNFT is ERC721,  Ownable {
     function batchMint( string[] memory tokenUriList) public payable {
         require( (mintedNFTids.length + tokenUriList.length) < maxSupply , "Can't mint more than total Supply" );
         require( (mintsPerWallet[msg.sender].length + tokenUriList.length) <= maxMintsPerWallet, "Can't mint more than maxMintsPerWallet" );
-        if ( preSaleIsON = true ) {
+        if ( preSaleIsON == true ) {
             require( (mintedNFTids.length + tokenUriList.length) < mintsDuringWhiteList , "Can't mint more than mintsDuringWhiteList" );
             require ( isWhiteList[msg.sender] == true , "User not whitlisted" ) ;
             }
