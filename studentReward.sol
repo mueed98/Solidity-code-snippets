@@ -32,6 +32,7 @@ contract main is Ownable, AccessControl {
         _setupRole(DEFAULT_ADMIN_ROLE, owner());
         _setRoleAdmin(DEPOSITER_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
+        
         grantRole(DEPOSITER_ROLE, owner() );
         grantRole(MANAGER_ROLE, owner() );
 
