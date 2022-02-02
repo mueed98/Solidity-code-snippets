@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.7;
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract main is Ownable {
 
-    address public admin;
-    address public depositer;
+contract main is Ownable, AccessControl {
+
+    bytes32 public constant DEPOSITER_ROLE = keccak256("DEPOSITER_ROLE");
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+
 
     // student data
     struct student {
@@ -19,64 +22,36 @@ contract main is Ownable {
     address[] private idList;
     address[] private topThree;
 
+    uint256 public studentReward;
     mapping(address => student ) private studentBook ; // a mapping of all students
 
-    mapping(address => bool ) private managerBook ; // a mapping of all managers
-
-    modifier onlyAdmin {
-      require(msg.sender == admin, "Not an Admin");
-      _;
-    }
-
-    modifier onlyDepositor {
-      require(msg.sender == depositer, "Not a depositer");
-      _;
-    }
-
-    modifier onlyManager {
-        require(managerBook[msg.sender] == true, "Not an Account Manager");
-        _;
-    }
 
     event payment_Sent(bool payment_Sent);
 
     constructor() {
-        admin = msg.sender;
-        depositer = msg.sender;
-        managerBook[msg.sender] = true;
-        console.log("Contract Created with Owner as : ", admin);
+        _setupRole(DEFAULT_ADMIN_ROLE, owner());
+        _setRoleAdmin(DEPOSITER_ROLE, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
+        grantRole(DEPOSITER_ROLE, owner() );
+        grantRole(MANAGER_ROLE, owner() );
 
     }
 
-    
-
-    function setAdmin(address _admin) public onlyOwner{
-        admin = _admin;
-        console.log("New Admin is : ", admin);    
+    function setReward(uint256 _studentReward) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        studentReward = _studentReward;
     }
 
-    function setDepositor(address _depositer) public onlyAdmin{
-        depositer = _depositer;
-        console.log("New depositer is : ", depositer);    
-    }
 
-    // if status = false, then given addresses are not managers. if status = true, then are managers. By default its false for any address
-    function setManagerStatus(address[] memory _manager, bool _status) public onlyAdmin{
-        for( uint256 i=0; i<_manager.length;i++){
-            managerBook[_manager[i]] = _status;
-        }   
-    }
-
-    function depositeEther() payable public onlyDepositor {
+    function depositeEther() payable public onlyRole(DEPOSITER_ROLE) {
         require( msg.value == 1 ether , "Amount Sent not equal to 1 Ether");
         emit payment_Sent(true); 
     }
 
-    function contractBalance() external view onlyDepositor returns(uint256 _t){
+    function contractBalance() external view onlyRole(DEPOSITER_ROLE) returns(uint256 _t){
         return( address(this).balance );
     }
 
-    function withdrawtBalance() external onlyDepositor{
+    function withdrawtBalance() external onlyRole(DEPOSITER_ROLE) {
 
         (bool sent,) = msg.sender.call{value: address(this).balance}("");
         require(sent == true, "Payment to Depositer unsuccessful");
@@ -86,18 +61,16 @@ contract main is Ownable {
     
 
     function getYourReward() public {
-        address _t = msg.sender;
-        require ( studentBook[_t].status == true , "You are not a student");
-        require ( _t==topThree[0] || _t==topThree[1] || _t==topThree[2], "Not top student" ); 
+        require ( studentBook[msg.sender].status == true , "You are not a student");
+        require ( msg.sender==topThree[0] || msg.sender==topThree[1] || msg.sender==topThree[2], "Not top student" ); 
          
-        uint256 fee = 0.3 ether; // each gets 0.3 ether
-        (bool sent,) = _t.call{value: fee}("");
+        (bool sent,) = msg.sender.call{value: studentReward}("");
         require(sent == true, "Payment to Student unsuccessful");
         emit payment_Sent(sent);
 
     }
 
-    function fetchData() public view onlyManager returns(student[] memory _i){
+    function fetchData() public view onlyRole(MANAGER_ROLE) returns(student[] memory _i){
 
         student[] memory temp = new student[](idList.length);
 
@@ -110,7 +83,7 @@ contract main is Ownable {
         return temp;
     }
 
-    function setStudentData(address[] memory _id, string[] memory _name, uint256[] memory _attendance ) public onlyAdmin {
+    function setStudentData(address[] memory _id, string[] memory _name, uint256[] memory _attendance ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         require( (_id.length == _name.length) && ( _name.length == _attendance.length), "Length of arrays not same" );
 
         for( uint256 i=0; i<_id.length;i++){
