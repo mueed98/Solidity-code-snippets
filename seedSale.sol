@@ -2125,6 +2125,11 @@ abstract contract constructorLibrary {
         uint256 minAllocTierOne;
         uint256 minAllocTierTwo;
         uint256 minAllocTierThree;
+
+        //min BUSD required to enter Tier
+        uint256 minBUSDvalue_TierOne;
+        uint256 minBUSDvalue_TierTwo;
+        uint256 minBUSDvalue_TierThree;
         
         address tokenToIDO;
         uint256 tokenDecimals;
@@ -2193,14 +2198,10 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
     uint256 public minAllocaPerUserTierTwo;
     uint256 public minAllocaPerUserTierThree;
 
-    // address for tier one whitelist
-    mapping(address => bool) public whitelistTierOne;
-
-    // address for tier two whitelist
-    mapping(address => bool) public whitelistTierTwo;
-
-    // address for tier three whitelist
-    mapping(address => bool) public whitelistTierThree;
+    //min BUSD required to enter Tier
+    uint256 public minBUSDvalue_TierOne;
+    uint256 public minBUSDvalue_TierTwo;
+    uint256 public minBUSDvalue_TierThree;
 
     // amount of tokens required to participate in respective tiers
     // uint256 public amountRequiredTier1;
@@ -2276,11 +2277,10 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
         minAllocaPerUserTierTwo = p.minAllocTierTwo;
         minAllocaPerUserTierThree = p.minAllocTierThree;
 
-
-        // amountRequiredTier1 = 1000 ether;
-        // amountRequiredTier2 = 2000 ether;
-        // amountRequiredTier3 = 3000 ether;
-
+        //min BUSD required to enter Tier
+        minBUSDvalue_TierOne = p.minBUSDvalue_TierOne;
+        minBUSDvalue_TierTwo = p.minBUSDvalue_TierTwo;
+        minBUSDvalue_TierThree = p.minBUSDvalue_TierThree;
 
         softCapPercentage = p._softCapPercentage;
         softCapInAllTiers = maxCap.div(100).mul(softCapPercentage);
@@ -2324,28 +2324,24 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
         BUSDToken.transfer(recipient, amount);
     }
 
-
     //send BUSD to the contract address
     //used to participate in the public sale according to your tier
     //main logic of IDO called and implemented here
-    function participateAndPay(uint256 value) public nonReentrant() {
+    function participateAndPay(uint256 value) public {
         require(block.timestamp >= saleStartTime, "The sale is not started yet "); // solhint-disable
         require(block.timestamp <= saleEndTime, "The sale is closed"); // solhint-disable
         require( totalBUSDReceivedInAllTier.add(value) <= maxCap, "buyTokens: purchase would exceed max cap");
         require(finalizedDone == false, 'Already Sale has Been Finalized And Cannot Participate Now');
         require ( BUSDToken.allowance(msg.sender, address(this)) >= value, "Not enough allowance given for value to participate" );
 
-        BUSDToken.transferFrom(msg.sender, address(this), value); 
+ 
 
 
-        if ( !getWhitelistOne(msg.sender) && !getWhitelistTwo(msg.sender) && !getWhitelistThree(msg.sender) ) {
-            revert( "Not whitelisted for any Tier kindly whiteList then participate");
-        }
-
-        if ( getWhitelistOne(msg.sender) ) {
+        if ( value >= minBUSDvalue_TierThree ) { // Adding to Tier 3
             require( buyInOneTier[msg.sender].add(value) <= maxAllocaPerUserTierOne,"buyTokens:You are investing more than your tier-1 limit!" );
             require( buyInOneTier[msg.sender].add(value) >= minAllocaPerUserTierOne, "buyTokens:You are investing less than your tier-1 limit!" );
             
+            BUSDToken.transferFrom(msg.sender, address(this), value);
             buyInOneTier[msg.sender] = buyInOneTier[msg.sender].add(value);
             totalBUSDReceivedInAllTier = totalBUSDReceivedInAllTier.add(
                 value
@@ -2355,10 +2351,11 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
             return;
         }
 
-        if ( getWhitelistTwo(msg.sender)) {
+        else if ( value >= minBUSDvalue_TierTwo  ) { // Adding to Tier 2
             require( buyInTwoTier[msg.sender].add(value) <= maxAllocaPerUserTierTwo, "buyTokens:You are investing more than your tier-2 limit!");
             require( buyInTwoTier[msg.sender].add(value) >= minAllocaPerUserTierTwo, "buyTokens:You are investing less than your tier-2 limit!");
             
+            BUSDToken.transferFrom(msg.sender, address(this), value);
             buyInTwoTier[msg.sender] = buyInTwoTier[msg.sender].add(value);
             totalBUSDReceivedInAllTier = totalBUSDReceivedInAllTier.add( value );
             totalBUSDInTierTwo = totalBUSDInTierTwo.add(value);
@@ -2366,16 +2363,19 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
             return;
         }
 
-        if ( getWhitelistThree(msg.sender) ) {
+        else if ( value >= minBUSDvalue_TierOne ) { // Adding to Tier 1
             require( buyInThreeTier[msg.sender].add(value) <= maxAllocaPerUserTierThree, "buyTokens:You are investing more than your tier-3 limit!");
             require( buyInThreeTier[msg.sender].add(value) >= minAllocaPerUserTierThree, "buyTokens:You are investing less than your tier-3 limit!");
             
+            BUSDToken.transferFrom(msg.sender, address(this), value);
             buyInThreeTier[msg.sender] = buyInThreeTier[msg.sender].add( value );
             totalBUSDReceivedInAllTier = totalBUSDReceivedInAllTier.add( value );
             totalBUSDInTierThree = totalBUSDInTierThree.add(value);
             emit Participated(msg.sender, value);
             return;
         }
+        else 
+            revert("Value sent is less than any Tier, Send as per Tiers to Participate");
 
         
     }
