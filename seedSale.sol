@@ -502,30 +502,23 @@ interface IERC20 {
     );
 }
 
-/*----------------------------------------------------------------------------------------------------------------*/
-
 abstract contract constructorLibrary {
     
     struct parameter {
         string nameOfProject;
         uint256 _saleStartTime;
-        uint256 _fcfsStartTime;
-        uint256 _fcfsEndTime;
+        
         uint256 _saleEndTime;
         address payable _projectOwner;
         address payable _tokenSender;
         uint256 maxAllocTierOne;
         uint256 maxAllocTierTwo;
         uint256 maxAllocTierThree;
-        uint256 maxAllocTierFour;
-        uint256 maxAllocTierFive;
-        uint256 maxAllocTierSix;
+        
         uint256 minAllocTierOne;
         uint256 minAllocTierTwo;
         uint256 minAllocTierThree;
-        uint256 minAllocTierFour;
-        uint256 minAllocTierFive;
-        uint256 minAllocTierSix;
+        
         address tokenToIDO;
         uint256 tokenDecimals;
         uint256 _numberOfIdoTokensToSell;
@@ -533,9 +526,7 @@ abstract contract constructorLibrary {
         uint256 _tierOneMaxCap;
         uint256 _tierTwoMaxCap;
         uint256 _tierThreeMaxCap;
-        uint256 _tierFourMaxCap;
-        uint256 _tierFiveMaxCap;
-        uint256 _tierSixMaxCap;
+        
         uint256 _softCapPercentage;
         uint256 _numberOfVestings;
         uint256[] _vestingPercentages;
@@ -544,9 +535,7 @@ abstract contract constructorLibrary {
 
 }
 
-interface MasterChef{
-    function getStakes(uint256 index, address stakedBy) external view returns (uint256);
-}
+
 
 contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     using SafeMath for uint256;
@@ -668,7 +657,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
         nativeToken = IERC20(0xB7809aDa6ef0CB220886C8A8D997eab72BECBE4d);     //TODO: temp add your own token here
         token = IERC20(p.tokenToIDO); //token to ido
         BUSDToken = IERC20(0xb883C5E72AC27c5f0B8A5233C6b9c8cf034C5371);
-        stakingContract = 0x20DE6Ab8Fa2F3A5B961254f207904dcAD3d5fd23;
 
         decimals = p.tokenDecimals; //decimals of ido token (no decimals)
 
@@ -679,8 +667,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
 
         saleStartTime = p._saleStartTime; //main sale start time
 
-        fcfsStartTime = p._fcfsStartTime; // fcfs start time
-        fcfsEndTime = p._fcfsEndTime; // fcfs end time
+
 
         saleEndTime = p._saleEndTime; //main sale end time
 
@@ -834,10 +821,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
         //checking staking eligiblity and token holding eligibility to get whitelisted
 
         uint256 amount = 0;
-
-        if (!getAlreadyWhiteListed(_address)) {
-            amount = MasterChef(stakingContract).getStakes(0, msg.sender);
-        }
 
             if (
                 amount >= amountRequiredTier1 ||
