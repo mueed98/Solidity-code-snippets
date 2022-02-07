@@ -585,9 +585,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     uint256 public totalBUSDInTierOne; // total BUSD for tier One
     uint256 public totalBUSDInTierTwo; // total BUSD for tier Two
     uint256 public totalBUSDInTierThree; // total BUSD for tier Three
-    uint256 public totalBUSDInTierFour; // total BUSD for tier One
-    uint256 public totalBUSDInTierFive; // total BUSD for tier Two
-    uint256 public totalBUSDInTierSix; // total BUSD for tier Three
+
     uint256 public totalBUSDInTierFCFS; // total BUSD for tier One
 
     address payable public projectOwner; // project Owner
@@ -596,27 +594,21 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     uint256 public tierOneMaxCap;
     uint256 public tierTwoMaxCap;
     uint256 public tierThreeMaxCap;
-    uint256 public tierFourMaxCap;
-    uint256 public tierFiveMaxCap;
-    uint256 public tierSixMaxCap;
+
     uint256 public tierFCFSMaxCap;
 
     //max allocations per user in a tier BUSD
     uint256 public maxAllocaPerUserTierOne;
     uint256 public maxAllocaPerUserTierTwo;
     uint256 public maxAllocaPerUserTierThree;
-    uint256 public maxAllocaPerUserTierFour;
-    uint256 public maxAllocaPerUserTierFive;
-    uint256 public maxAllocaPerUserTierSix;
+    
     uint256 public maxAllocaPerUserTierFCFS;
 
     //min allocations per user in a tier BUSD
     uint256 public minAllocaPerUserTierOne;
     uint256 public minAllocaPerUserTierTwo;
     uint256 public minAllocaPerUserTierThree;
-    uint256 public minAllocaPerUserTierFour;
-    uint256 public minAllocaPerUserTierFive;
-    uint256 public minAllocaPerUserTierSix;
+
     uint256 public minAllocaPerUserTierFCFS;
 
     // address for tier one whitelist
@@ -697,26 +689,20 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
         tierOneMaxCap = (p._tierOneMaxCap); //  maxCap
         tierTwoMaxCap = (p._tierTwoMaxCap); //  maxCap
         tierThreeMaxCap = (p._tierThreeMaxCap); //  maxCap
-        tierFourMaxCap = (p._tierFourMaxCap); //  maxCap
-        tierFiveMaxCap = (p._tierFiveMaxCap); //  maxCap
-        tierSixMaxCap = (p._tierSixMaxCap); //  maxCap
+
         tierFCFSMaxCap = 0; // initially set to 0
 
         //give values in wei amount 18 decimals BUSD
         maxAllocaPerUserTierOne = p.maxAllocTierOne;
         maxAllocaPerUserTierTwo = p.maxAllocTierTwo;
         maxAllocaPerUserTierThree = p.maxAllocTierThree;
-        maxAllocaPerUserTierFour = p.maxAllocTierFour;
-        maxAllocaPerUserTierFive = p.maxAllocTierFive;
-        maxAllocaPerUserTierSix = p.maxAllocTierSix;
+
 
         //give values in wei amount 18 decimals BUSD
         minAllocaPerUserTierOne = p.minAllocTierOne;
         minAllocaPerUserTierTwo = p.minAllocTierTwo;
         minAllocaPerUserTierThree = p.minAllocTierThree;
-        minAllocaPerUserTierFour = p.minAllocTierFour;
-        minAllocaPerUserTierFive = p.minAllocTierFive;
-        minAllocaPerUserTierSix = p.minAllocTierSix;
+
 
         amountRequiredTier1 = 1000 ether;
         amountRequiredTier2 = 2000 ether;
@@ -750,10 +736,8 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     //add the address in Whitelist tier two to invest
     function addWhitelistTwo(address _address) public onlyOwner {
         require(_address != address(0), "Invalid address");
-        require(
-            alreadyWhitelisted[_address] == false,
-            "Already Whitelisted address cannot be whitelisted in another tier or this tier"
-        );
+        require( alreadyWhitelisted[_address] == false, "Already Whitelisted address cannot be whitelisted in another tier or this tier");
+
         alreadyWhitelisted[_address] = true;
         whitelistTierTwo[_address] = true;
         whitelistTierFCFS[_address] = true;
@@ -807,11 +791,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     }
 
 
-    function getAlreadyWhiteListed(address _address)
-        public
-        view
-        returns (bool)
-    {
+    function getAlreadyWhiteListed(address _address) public view returns (bool){
         return alreadyWhitelisted[_address];
     }
 
@@ -832,17 +812,11 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
      * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
      */
     function sendValue(address payable recipient, uint256 amount) internal {
-        require(
-            address(this).balance >= amount,
-            "Address: insufficient balance"
-        );
+        require( address(this).balance >= amount, "Address: insufficient balance");
 
         // solhint-disable-next-line avoid-low-level-calls, avoid-call-value
         (bool success, ) = recipient.call{value: amount}("");
-        require(
-            success,
-            "Address: unable to send value, recipient may have reverted"
-        );
+        require(success, "Address: unable to send value, recipient may have reverted");
     }
 
     function sendBUSD(address payable recipient, uint256 amount) internal {
