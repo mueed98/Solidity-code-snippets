@@ -963,6 +963,3 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
         return amount >= amountRequiredTier3 || whitelistTierThree[toCheckAddress];
     }
 }
-
-
-
