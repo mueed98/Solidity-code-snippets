@@ -540,19 +540,12 @@ abstract contract constructorLibrary {
 contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     using SafeMath for uint256;
 
-    struct UserInfo {
-        uint256 amount;     // How many LP tokens the user has provided.
-        uint256 rewardDebt; // Reward debt. See explanation below.
-        uint256 stakingTime;
-        uint256 unstakeTime;
-    }
-
     //token attributes
     string public NAME_OF_PROJECT; //name of the contract
 
     IERC20 public nativeToken; //native token of IDO
     IERC20 public BUSDToken;   // BUSD address
-    address public stakingContract; // Staking Contract
+
 
     IERC20 public token; //token to do IDO of
     
@@ -561,8 +554,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     uint256 public tokenPriceInBUSD; //18 decimals
 
     uint256 public saleStartTime; // start sale time
-    uint256 public fcfsStartTime; // FCFS Start Time
-    uint256 public fcfsEndTime; // FCFS End Time
+
     uint256 public saleEndTime; // end sale time
 
     uint256 public totalBUSDReceivedInAllTier; // total BUSD received
@@ -577,8 +569,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     uint256 public totalBUSDInTierTwo; // total BUSD for tier Two
     uint256 public totalBUSDInTierThree; // total BUSD for tier Three
 
-    uint256 public totalBUSDInTierFCFS; // total BUSD for tier One
-
     address payable public projectOwner; // project Owner
 
     // max cap per tier in BUSD
@@ -586,21 +576,15 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     uint256 public tierTwoMaxCap;
     uint256 public tierThreeMaxCap;
 
-    uint256 public tierFCFSMaxCap;
-
     //max allocations per user in a tier BUSD
     uint256 public maxAllocaPerUserTierOne;
     uint256 public maxAllocaPerUserTierTwo;
     uint256 public maxAllocaPerUserTierThree;
     
-    uint256 public maxAllocaPerUserTierFCFS;
-
     //min allocations per user in a tier BUSD
     uint256 public minAllocaPerUserTierOne;
     uint256 public minAllocaPerUserTierTwo;
     uint256 public minAllocaPerUserTierThree;
-
-    uint256 public minAllocaPerUserTierFCFS;
 
     // address for tier one whitelist
     mapping(address => bool) public whitelistTierOne;
@@ -611,9 +595,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     // address for tier three whitelist
     mapping(address => bool) public whitelistTierThree;
 
-    // address for tier three whitelist
-    mapping(address => bool) public whitelistTierFCFS;
-
     // amount of tokens required to participate in respective tiers
     uint256 public amountRequiredTier1;
     uint256 public amountRequiredTier2;
@@ -623,8 +604,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     mapping(address => uint256) public buyInOneTier;
     mapping(address => uint256) public buyInTwoTier;
     mapping(address => uint256) public buyInThreeTier;
-
-    mapping(address => uint256) public buyInFCFSTier;
 
     mapping(address => bool) public alreadyWhitelisted;
 
@@ -679,8 +658,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
         tierTwoMaxCap = (p._tierTwoMaxCap); //  maxCap
         tierThreeMaxCap = (p._tierThreeMaxCap); //  maxCap
 
-        tierFCFSMaxCap = 0; // initially set to 0
-
         //give values in wei amount 18 decimals BUSD
         maxAllocaPerUserTierOne = p.maxAllocTierOne;
         maxAllocaPerUserTierTwo = p.maxAllocTierTwo;
@@ -713,13 +690,11 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     //add the address in Whitelist tier One to invest
     function addWhitelistOne(address _address) public onlyOwner {
         require(_address != address(0), "Invalid address");
-        require(
-            alreadyWhitelisted[_address] == false,
-            "Already Whitelisted address cannot be whitelisted in another tier or this tier"
-        );
+        require( alreadyWhitelisted[_address] == false, "Already Whitelisted address cannot be whitelisted in another tier or this tier");
+        
         alreadyWhitelisted[_address] = true;
         whitelistTierOne[_address] = true;
-        whitelistTierFCFS[_address] = true;
+
     }
 
     //add the address in Whitelist tier two to invest
@@ -729,19 +704,14 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
 
         alreadyWhitelisted[_address] = true;
         whitelistTierTwo[_address] = true;
-        whitelistTierFCFS[_address] = true;
     }
 
     //add the address in Whitelist tier three to invest
     function addWhitelistThree(address _address) public onlyOwner {
         require(_address != address(0), "Invalid address");
-        require(
-            alreadyWhitelisted[_address] == false,
-            "Already Whitelisted address cannot be whitelisted in another tier or this tier"
-        );
+        require( alreadyWhitelisted[_address] == false, "Already Whitelisted address cannot be whitelisted in another tier or this tier");
         alreadyWhitelisted[_address] = true;
         whitelistTierThree[_address] = true;
-        whitelistTierFCFS[_address] = true;
     }
 
     
@@ -754,7 +724,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     function addWhitelistFCFS(address _address) public onlyOwner {
         require(_address != address(0), "Invalid address");
         alreadyWhitelisted[_address] = true;
-        whitelistTierFCFS[_address] = true;
     }
 
     // check the address in whitelist tier one
@@ -771,14 +740,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     function getWhitelistThree(address _address) public view returns (bool) {
         return whitelistTierThree[_address];
     }
-
-
-
-    // check the address in whitelist tier FCFS
-    function getWhitelistFCFS(address _address) public view returns (bool) {
-        return whitelistTierFCFS[_address];
-    }
-
 
     function getAlreadyWhiteListed(address _address) public view returns (bool){
         return alreadyWhitelisted[_address];
@@ -809,79 +770,12 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     }
 
     function sendBUSD(address payable recipient, uint256 amount) internal {
-        require(
-            BUSDToken.balanceOf(address(this)) >= amount,
-            "BUSD: Insufficient Balance"
-        );
-
+        require( BUSDToken.balanceOf(address(this)) >= amount, "BUSD: Insufficient Balance" );
         BUSDToken.transfer(recipient, amount);
     }
 
-    function checkStakingEligibility(address _address) internal {
-        //checking staking eligiblity and token holding eligibility to get whitelisted
+    
 
-        uint256 amount = 0;
-
-            if (
-                amount >= amountRequiredTier1 ||
-                whitelistTierOne[_address] == true
-            ) {
-                if (alreadyWhitelisted[_address] == false) {
-                    whitelistTierOne[_address] = true;
-                    alreadyWhitelisted[_address] = true;
-                    whitelistTierFCFS[_address] = true;
-                }
-                return;
-            } 
-        
-            if (
-                amount >= amountRequiredTier2 ||
-                whitelistTierTwo[_address] == true
-            ) {
-                if (alreadyWhitelisted[_address] == false) {
-                    whitelistTierTwo[_address] = true;
-                    alreadyWhitelisted[_address] = true;
-                    whitelistTierFCFS[_address] = true;
-                }
-                return;
-            } 
-         
-            if (
-                amount >= amountRequiredTier3 ||
-                whitelistTierThree[_address] == true
-            ) {
-                if (alreadyWhitelisted[_address] == false) {
-                    whitelistTierThree[_address] = true;
-                    alreadyWhitelisted[_address] = true;
-                    whitelistTierFCFS[_address] = true;
-                }
-                return;
-            } 
-
-
-            revert(
-                "You are not eligible to participate!"
-            );
-    }
-
-    function transferMaxCapPerTierToNextLevel() internal {
-        //transferring previous tier MaxCap to next tier after a tier has ended and maxcap is left
-
-        if (block.timestamp >= fcfsStartTime && tierTransfer == false) {
-            tierFCFSMaxCap = maxCap.sub(totalBUSDReceivedInAllTier);
-            tierTransfer = true;
-            maxAllocaPerUserTierFCFS = tierFCFSMaxCap.mul(2).div(100);
-            minAllocaPerUserTierFCFS = tierFCFSMaxCap.mul(1).div(100);
-        }        
-
-    }
-
-    function fcfsEligibility(address _address) internal view {
-        require(
-            alreadyWhitelisted[_address] == true && whitelistTierFCFS[_address] == true,
-            "Not eligible for FCFS round"
-        );
-    }
 
 
     //send BUSD to the contract address
@@ -890,67 +784,21 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     function participateAndPay(uint256 value) public {
         require(block.timestamp >= saleStartTime, "The sale is not started yet "); // solhint-disable
         require(block.timestamp <= saleEndTime, "The sale is closed"); // solhint-disable
-        require(
-            totalBUSDReceivedInAllTier.add(value) <= maxCap,
-            "buyTokens: purchase would exceed max cap"
-        );
+        require( totalBUSDReceivedInAllTier.add(value) <= maxCap, "buyTokens: purchase would exceed max cap");
         require(finalizedDone == false, 'Already Sale has Been Finalized And Cannot Participate Now');
-
-        transferMaxCapPerTierToNextLevel(); //transfers previous tier remaining cap to next tier
-        checkStakingEligibility(msg.sender); //makes sure that all staking coin holders get whitelisted automatically
-
-        require (
-            BUSDToken.allowance(msg.sender, address(this)) >= value,
-            "Not enough allowance given for value to participate"
-        );
+        require ( BUSDToken.allowance(msg.sender, address(this)) >= value, "Not enough allowance given for value to participate" );
 
         BUSDToken.transferFrom(msg.sender, address(this), value); 
 
-        if ( block.timestamp >= fcfsStartTime && block.timestamp <= fcfsEndTime ){
-            
-            fcfsEligibility(msg.sender);
-
-            if ( alreadyWhitelisted[msg.sender] == true && whitelistTierFCFS[msg.sender] == true ){
-
-                require(
-                    buyInFCFSTier[msg.sender].add(value) <=
-                        maxAllocaPerUserTierFCFS,
-                    "buyTokens:You are investing more than your tier-FCFS limit!"
-                );
-                require(
-                    buyInFCFSTier[msg.sender].add(value) >=
-                        minAllocaPerUserTierFCFS,
-                    "buyTokens:You are investing less than your tier-FCFS limit!"
-                );
-                buyInFCFSTier[msg.sender] = buyInFCFSTier[msg.sender].add(
-                    value
-                );
-                totalBUSDReceivedInAllTier = totalBUSDReceivedInAllTier.add(
-                    value
-                );
-                totalBUSDInTierFCFS = totalBUSDInTierFCFS.add(value);
-                emit Participated(msg.sender, value);
-                return;
-            }
-        }
 
         if ( !getWhitelistOne(msg.sender) && !getWhitelistTwo(msg.sender) && !getWhitelistThree(msg.sender) ) {
             revert( "Not whitelisted for any Tier kindly whiteList then participate");
         }
 
-        if (
-            getWhitelistOne(msg.sender)
-        ) {
-            require(
-                buyInOneTier[msg.sender].add(value) <=
-                    maxAllocaPerUserTierOne,
-                "buyTokens:You are investing more than your tier-1 limit!"
-            );
-            require(
-                buyInOneTier[msg.sender].add(value) >=
-                    minAllocaPerUserTierOne,
-                "buyTokens:You are investing less than your tier-1 limit!"
-            );
+        if ( getWhitelistOne(msg.sender) ) {
+            require( buyInOneTier[msg.sender].add(value) <= maxAllocaPerUserTierOne,"buyTokens:You are investing more than your tier-1 limit!" );
+            require( buyInOneTier[msg.sender].add(value) >= minAllocaPerUserTierOne, "buyTokens:You are investing less than your tier-1 limit!" );
+            
             buyInOneTier[msg.sender] = buyInOneTier[msg.sender].add(value);
             totalBUSDReceivedInAllTier = totalBUSDReceivedInAllTier.add(
                 value
@@ -960,47 +808,22 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
             return;
         }
 
-        if (
-            getWhitelistTwo(msg.sender)
-        ) {
-            require(
-                buyInTwoTier[msg.sender].add(value) <=
-                    maxAllocaPerUserTierTwo,
-                "buyTokens:You are investing more than your tier-2 limit!"
-            );
-            require(
-                buyInTwoTier[msg.sender].add(value) >=
-                    minAllocaPerUserTierTwo,
-                "buyTokens:You are investing less than your tier-2 limit!"
-            );
+        if ( getWhitelistTwo(msg.sender)) {
+            require( buyInTwoTier[msg.sender].add(value) <= maxAllocaPerUserTierTwo, "buyTokens:You are investing more than your tier-2 limit!");
+            require( buyInTwoTier[msg.sender].add(value) >= minAllocaPerUserTierTwo, "buyTokens:You are investing less than your tier-2 limit!");
             buyInTwoTier[msg.sender] = buyInTwoTier[msg.sender].add(value);
-            totalBUSDReceivedInAllTier = totalBUSDReceivedInAllTier.add(
-                value
-            );
+            totalBUSDReceivedInAllTier = totalBUSDReceivedInAllTier.add( value );
             totalBUSDInTierTwo = totalBUSDInTierTwo.add(value);
             emit Participated(msg.sender, value);
             return;
         }
 
-        if (
-            getWhitelistThree(msg.sender)
-        ) {
-            require(
-                buyInThreeTier[msg.sender].add(value) <=
-                    maxAllocaPerUserTierThree,
-                "buyTokens:You are investing more than your tier-3 limit!"
-            );
-            require(
-                buyInThreeTier[msg.sender].add(value) >=
-                    minAllocaPerUserTierThree,
-                "buyTokens:You are investing less than your tier-3 limit!"
-            );
-            buyInThreeTier[msg.sender] = buyInThreeTier[msg.sender].add(
-                value
-            );
-            totalBUSDReceivedInAllTier = totalBUSDReceivedInAllTier.add(
-                value
-            );
+        if ( getWhitelistThree(msg.sender) ) {
+            require( buyInThreeTier[msg.sender].add(value) <= maxAllocaPerUserTierThree, "buyTokens:You are investing more than your tier-3 limit!");
+            require( buyInThreeTier[msg.sender].add(value) >= minAllocaPerUserTierThree, "buyTokens:You are investing less than your tier-3 limit!");
+            
+            buyInThreeTier[msg.sender] = buyInThreeTier[msg.sender].add( value );
+            totalBUSDReceivedInAllTier = totalBUSDReceivedInAllTier.add( value );
             totalBUSDInTierThree = totalBUSDInTierThree.add(value);
             emit Participated(msg.sender, value);
             return;
