@@ -1,6 +1,9 @@
-pragma solidity ^0.8.10;
-
 // SPDX-License-Identifier: MIT
+pragma solidity 0.8.11;
+
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "hardhat/console.sol";
+
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -537,7 +540,7 @@ abstract contract constructorLibrary {
 
 
 
-contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
+contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard {
     using SafeMath for uint256;
 
     //token attributes
@@ -770,7 +773,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     //send BUSD to the contract address
     //used to participate in the public sale according to your tier
     //main logic of IDO called and implemented here
-    function participateAndPay(uint256 value) public {
+    function participateAndPay(uint256 value) public nonReentrant() {
         require(block.timestamp >= saleStartTime, "The sale is not started yet "); // solhint-disable
         require(block.timestamp <= saleEndTime, "The sale is closed"); // solhint-disable
         require( totalBUSDReceivedInAllTier.add(value) <= maxCap, "buyTokens: purchase would exceed max cap");
@@ -869,7 +872,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
         }
     }
 
-    function claim() public {
+    function claim() public nonReentrant() {
         require ( finalizedDone == true, "The Sale has not been Finalized Yet!" );
 
         uint256 amountSpent = buyInOneTier[msg.sender].add(buyInTwoTier[msg.sender]).add(buyInThreeTier[msg.sender]);
