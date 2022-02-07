@@ -714,17 +714,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
         whitelistTierThree[_address] = true;
     }
 
-    
-
-
-
-
-
-    //add the address in Whitelist tier FCFS to invest
-    function addWhitelistFCFS(address _address) public onlyOwner {
-        require(_address != address(0), "Invalid address");
-        alreadyWhitelisted[_address] = true;
-    }
 
     // check the address in whitelist tier one
     function getWhitelistOne(address _address) public view returns (bool) {
@@ -811,6 +800,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
         if ( getWhitelistTwo(msg.sender)) {
             require( buyInTwoTier[msg.sender].add(value) <= maxAllocaPerUserTierTwo, "buyTokens:You are investing more than your tier-2 limit!");
             require( buyInTwoTier[msg.sender].add(value) >= minAllocaPerUserTierTwo, "buyTokens:You are investing less than your tier-2 limit!");
+            
             buyInTwoTier[msg.sender] = buyInTwoTier[msg.sender].add(value);
             totalBUSDReceivedInAllTier = totalBUSDReceivedInAllTier.add( value );
             totalBUSDInTierTwo = totalBUSDInTierTwo.add(value);
@@ -846,10 +836,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
             uint256 launchPadBalanceBUSD = participationBalanceBUSD.mul(launchPadFeePercentage).div(100);
             uint256 launchPadBalanceTokens = participationBalanceTokens.mul(launchPadFeePercentage).div(100);
 
-            require(
-                token.balanceOf( address(this) ) >= participationBalanceTokens.add(launchPadBalanceTokens),
-                "Not Enough Tokens to Finalize, Kindly add more tokens to finalize sale!"
-            );
+            require( token.balanceOf( address(this) ) >= participationBalanceTokens.add(launchPadBalanceTokens), "Not Enough Tokens to Finalize, Kindly add more tokens to finalize sale!");
 
             // SEND FEE TO PLATFORM (Tokens + BUSD)
             token.transfer(launchpadOwner,launchPadBalanceTokens);
@@ -883,14 +870,9 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
     }
 
     function claim() public {
-        require (
-            finalizedDone == true,
-            "The Sale has not been Finalized Yet!"
-        );
+        require ( finalizedDone == true, "The Sale has not been Finalized Yet!" );
 
-        uint256 amountSpent = buyInOneTier[msg.sender]
-            .add(buyInTwoTier[msg.sender])
-            .add(buyInThreeTier[msg.sender]);
+        uint256 amountSpent = buyInOneTier[msg.sender].add(buyInTwoTier[msg.sender]).add(buyInThreeTier[msg.sender]);
 
         if(amountSpent == 0) {
             revert("You have not participated hence cannot claim tokens");
@@ -898,10 +880,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
 
         if (successIDO == true && failedIDO == false) {
             
-            require(
-                alreadyClaimed[msg.sender][numberOfVestings-1] == false, 
-                "All Vestings Claimed Already"
-            );
+            require( alreadyClaimed[msg.sender][numberOfVestings-1] == false, "All Vestings Claimed Already");
 
             for (uint256 i = 0; i < numberOfVestings; i++) {
                 
@@ -910,10 +889,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
                         
                         //success case
                         //send token according to rate*amountspend
-                        uint256 toSend = amountSpent
-                            .div(tokenPriceInBUSD)
-                            .mul(vestingPercentages[i])
-                            .div(100); //only first iteration percentage tokens to distribute rest are vested
+                        uint256 toSend = amountSpent.div(tokenPriceInBUSD).mul(vestingPercentages[i]).div(100); //only first iteration percentage tokens to distribute rest are vested
                         token.transfer(msg.sender, toSend.mul(10**(decimals))); //converting to 9 decimals from 18 decimals
                         //send BUSD to wallet
                         alreadyClaimed[msg.sender][i] = true;
@@ -944,10 +920,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
         tokenSender = _tokenSender;
     }
 
-    function withdrawTokensEmergency(address recipient, uint256 amount)
-        public
-        onlyOwner
-    {
+    function withdrawTokensEmergency(address recipient, uint256 amount) public onlyOwner{
         token.transfer(recipient, amount);
     }
 
