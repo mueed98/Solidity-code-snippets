@@ -721,9 +721,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
         amountRequiredTier1 = 1000 ether;
         amountRequiredTier2 = 2000 ether;
         amountRequiredTier3 = 3000 ether;
-        amountRequiredTier4 = 10000 ether;
-        amountRequiredTier5 = 20000 ether;
-        amountRequiredTier6 = 30000 ether;
+
 
         softCapPercentage = p._softCapPercentage;
         softCapInAllTiers = maxCap.div(100).mul(softCapPercentage);
@@ -773,41 +771,11 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
         whitelistTierFCFS[_address] = true;
     }
 
-    //add the address in Whitelist tier Four to invest
-    function addWhitelistFour(address _address) public onlyOwner {
-        require(_address != address(0), "Invalid address");
-        require(
-            alreadyWhitelisted[_address] == false,
-            "Already Whitelisted address cannot be whitelisted in another tier or this tier"
-        );
-        alreadyWhitelisted[_address] = true;
-        whitelistTierFour[_address] = true;
-        whitelistTierFCFS[_address] = true;
-    }
+    
 
-    //add the address in Whitelist tier Five to invest
-    function addWhitelistFive(address _address) public onlyOwner {
-        require(_address != address(0), "Invalid address");
-        require(
-            alreadyWhitelisted[_address] == false,
-            "Already Whitelisted address cannot be whitelisted in another tier or this tier"
-        );
-        alreadyWhitelisted[_address] = true;
-        whitelistTierFive[_address] = true;
-        whitelistTierFCFS[_address] = true;
-    }
 
-    //add the address in Whitelist tier Six to invest
-    function addWhitelistSix(address _address) public onlyOwner {
-        require(_address != address(0), "Invalid address");
-        require(
-            alreadyWhitelisted[_address] == false,
-            "Already Whitelisted address cannot be whitelisted in another tier or this tier"
-        );
-        alreadyWhitelisted[_address] = true;
-        whitelistTierSix[_address] = true;
-        whitelistTierFCFS[_address] = true;
-    }
+
+
 
     //add the address in Whitelist tier FCFS to invest
     function addWhitelistFCFS(address _address) public onlyOwner {
@@ -831,20 +799,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
         return whitelistTierThree[_address];
     }
 
-        // check the address in whitelist tier Four
-    function getWhitelistFour(address _address) public view returns (bool) {
-        return whitelistTierFour[_address];
-    }
 
-    // check the address in whitelist tier Five
-    function getWhitelistFive(address _address) public view returns (bool) {
-        return whitelistTierFive[_address];
-    }
-
-    // check the address in whitelist tier Six
-    function getWhitelistSix(address _address) public view returns (bool) {
-        return whitelistTierSix[_address];
-    }
 
     // check the address in whitelist tier FCFS
     function getWhitelistFCFS(address _address) public view returns (bool) {
@@ -944,41 +899,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
                 return;
             } 
 
-            if (
-                amount >= amountRequiredTier4 ||
-                whitelistTierFour[_address] == true
-            ) {
-                if (alreadyWhitelisted[_address] == false) {
-                    whitelistTierFour[_address] = true;
-                    alreadyWhitelisted[_address] = true;
-                    whitelistTierFCFS[_address] = true;
-                }
-                return;
-            } 
-
-            if (
-                amount >= amountRequiredTier5 ||
-                whitelistTierFive[_address] == true
-            ) {
-                if (alreadyWhitelisted[_address] == false) {
-                    whitelistTierFive[_address] = true;
-                    alreadyWhitelisted[_address] = true;
-                    whitelistTierFCFS[_address] = true;
-                }
-                return;
-            } 
-
-            if (
-                amount >= amountRequiredTier6 ||
-                whitelistTierSix[_address] == true
-            ) {
-                if (alreadyWhitelisted[_address] == false) {
-                    whitelistTierSix[_address] = true;
-                    alreadyWhitelisted[_address] = true;
-                    whitelistTierFCFS[_address] = true;
-                }
-                return;
-            }
 
             revert(
                 "You are not eligible to participate!"
@@ -1055,17 +975,8 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
             }
         }
 
-        if (
-            !getWhitelistOne(msg.sender) &&
-            !getWhitelistTwo(msg.sender) &&
-            !getWhitelistThree(msg.sender) &&
-            !getWhitelistFour(msg.sender) &&
-            !getWhitelistFive(msg.sender) &&
-            !getWhitelistSix(msg.sender)
-        ) {
-            revert(
-                "Not whitelisted for any Tier kindly whiteList then participate"
-            );
+        if ( !getWhitelistOne(msg.sender) && !getWhitelistTwo(msg.sender) && !getWhitelistThree(msg.sender) ) {
+            revert( "Not whitelisted for any Tier kindly whiteList then participate");
         }
 
         if (
@@ -1136,77 +1047,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary {
             return;
         }
 
-        if (
-            getWhitelistFour(msg.sender)
-        ) {
-            require(
-                buyInFourTier[msg.sender].add(value) <=
-                    maxAllocaPerUserTierFour,
-                "buyTokens:You are investing more than your tier-4 limit!"
-            );
-            require(
-                buyInFourTier[msg.sender].add(value) >=
-                    minAllocaPerUserTierFour,
-                "buyTokens:You are investing less than your tier-4 limit!"
-            );
-            buyInFourTier[msg.sender] = buyInFourTier[msg.sender].add(
-                value
-            );
-            totalBUSDReceivedInAllTier = totalBUSDReceivedInAllTier.add(
-                value
-            );
-            totalBUSDInTierFour = totalBUSDInTierFour.add(value);
-            emit Participated(msg.sender, value);
-            return;
-        }
-
-        if (
-            getWhitelistFive(msg.sender)
-        ) {
-            require(
-                buyInFiveTier[msg.sender].add(value) <=
-                    maxAllocaPerUserTierFive,
-                "buyTokens:You are investing more than your tier-5 limit!"
-            );
-            require(
-                buyInFiveTier[msg.sender].add(value) >=
-                    minAllocaPerUserTierFive,
-                "buyTokens:You are investing less than your tier-5 limit!"
-            );
-            buyInFiveTier[msg.sender] = buyInFiveTier[msg.sender].add(
-                value
-            );
-            totalBUSDReceivedInAllTier = totalBUSDReceivedInAllTier.add(
-                value
-            );
-            totalBUSDInTierFive = totalBUSDInTierThree.add(value);
-            emit Participated(msg.sender, value);
-            return;
-        }
-
-        if (
-            getWhitelistSix(msg.sender)
-        ) {
-            require(
-                buyInSixTier[msg.sender].add(value) <=
-                    maxAllocaPerUserTierSix,
-                "buyTokens:You are investing more than your tier-6 limit!"
-            );
-            require(
-                buyInSixTier[msg.sender].add(value) >=
-                    minAllocaPerUserTierSix,
-                "buyTokens:You are investing less than your tier-6 limit!"
-            );
-            buyInSixTier[msg.sender] = buyInSixTier[msg.sender].add(
-                value
-            );
-            totalBUSDReceivedInAllTier = totalBUSDReceivedInAllTier.add(
-                value
-            );
-            totalBUSDInTierSix = totalBUSDInTierSix.add(value);
-            emit Participated(msg.sender, value);
-            return;
-        }
+        
     }
 
     function finalizeSale() public onlyOwner {
