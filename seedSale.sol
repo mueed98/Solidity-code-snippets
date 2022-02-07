@@ -766,9 +766,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
         BUSDToken.transfer(recipient, amount);
     }
 
-    
-
-
 
     //send BUSD to the contract address
     //used to participate in the public sale according to your tier
