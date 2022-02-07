@@ -2150,7 +2150,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
     //token attributes
     string public NAME_OF_PROJECT; //name of the contract
 
-    IERC20 public nativeToken; //native token of IDO
+    // IERC20 public nativeToken; //native token of IDO
     IERC20 public BUSDToken;   // BUSD address
 
 
@@ -2203,16 +2203,16 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
     mapping(address => bool) public whitelistTierThree;
 
     // amount of tokens required to participate in respective tiers
-    uint256 public amountRequiredTier1;
-    uint256 public amountRequiredTier2;
-    uint256 public amountRequiredTier3;
+    // uint256 public amountRequiredTier1;
+    // uint256 public amountRequiredTier2;
+    // uint256 public amountRequiredTier3;
 
     //mapping the user purchase per tier
     mapping(address => uint256) public buyInOneTier;
     mapping(address => uint256) public buyInTwoTier;
     mapping(address => uint256) public buyInThreeTier;
 
-    mapping(address => bool) public alreadyWhitelisted;
+    // mapping(address => bool) public alreadyWhitelisted;
 
     bool public tierTransfer = false;
 
@@ -2240,7 +2240,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
     constructor(parameter memory p, address payable _launchpadOwner, uint256 _launchPadFeePercentage) {
         NAME_OF_PROJECT = p.nameOfProject; // name of the project to do IDO of
 
-        nativeToken = IERC20(0xB7809aDa6ef0CB220886C8A8D997eab72BECBE4d);     //TODO: temp add your own token here
+        // nativeToken = IERC20(0xB7809aDa6ef0CB220886C8A8D997eab72BECBE4d);     //TODO: temp add your own token here
         token = IERC20(p.tokenToIDO); //token to ido
         BUSDToken = IERC20(0xb883C5E72AC27c5f0B8A5233C6b9c8cf034C5371);
 
@@ -2277,9 +2277,9 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
         minAllocaPerUserTierThree = p.minAllocTierThree;
 
 
-        amountRequiredTier1 = 1000 ether;
-        amountRequiredTier2 = 2000 ether;
-        amountRequiredTier3 = 3000 ether;
+        // amountRequiredTier1 = 1000 ether;
+        // amountRequiredTier2 = 2000 ether;
+        // amountRequiredTier3 = 3000 ether;
 
 
         softCapPercentage = p._softCapPercentage;
@@ -2294,52 +2294,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
 
     }
 
-    //add the address in Whitelist tier One to invest
-    function addWhitelistOne(address _address) public onlyOwner {
-        require(_address != address(0), "Invalid address");
-        require( alreadyWhitelisted[_address] == false, "Already Whitelisted address cannot be whitelisted in another tier or this tier");
-        
-        alreadyWhitelisted[_address] = true;
-        whitelistTierOne[_address] = true;
-
-    }
-
-    //add the address in Whitelist tier two to invest
-    function addWhitelistTwo(address _address) public onlyOwner {
-        require(_address != address(0), "Invalid address");
-        require( alreadyWhitelisted[_address] == false, "Already Whitelisted address cannot be whitelisted in another tier or this tier");
-
-        alreadyWhitelisted[_address] = true;
-        whitelistTierTwo[_address] = true;
-    }
-
-    //add the address in Whitelist tier three to invest
-    function addWhitelistThree(address _address) public onlyOwner {
-        require(_address != address(0), "Invalid address");
-        require( alreadyWhitelisted[_address] == false, "Already Whitelisted address cannot be whitelisted in another tier or this tier");
-        alreadyWhitelisted[_address] = true;
-        whitelistTierThree[_address] = true;
-    }
-
-
-    // check the address in whitelist tier one
-    function getWhitelistOne(address _address) public view returns (bool) {
-        return whitelistTierOne[_address];
-    }
-
-    // check the address in whitelist tier two
-    function getWhitelistTwo(address _address) public view returns (bool) {
-        return whitelistTierTwo[_address];
-    }
-
-    // check the address in whitelist tier three
-    function getWhitelistThree(address _address) public view returns (bool) {
-        return whitelistTierThree[_address];
-    }
-
-    function getAlreadyWhiteListed(address _address) public view returns (bool){
-        return alreadyWhitelisted[_address];
-    }
 
     /**
      * @dev Replacement for Solidity's `transfer`: sends `amount` wei to
@@ -2516,9 +2470,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
         }
     }
 
-    function amountTokens(address _address) public view returns (uint256) {
-        return nativeToken.balanceOf(_address);
-    }
 
     function setTokenSenderAddress(address _tokenSender) public onlyOwner {
         tokenSender = _tokenSender;
@@ -2532,38 +2483,4 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
         sendValue(recipient, amount);
     }
 
-    function isEligible(address toCheckAddress) public view returns (uint256) {
-        
-        uint256 tokens = amountTokens(toCheckAddress);
-
-        if ( tokens >= amountRequiredTier1 || whitelistTierOne[toCheckAddress]) {
-            return 1;
-        } 
-        else if ( tokens >= amountRequiredTier2 || whitelistTierTwo[toCheckAddress]) {
-            return 2;
-        } 
-        else if ( tokens >= amountRequiredTier3 || whitelistTierThree[toCheckAddress]) {
-            return 3;
-        } 
-        else {
-            return 0;
-        }
-    }
-
-    function isEligibleInTier1(address toCheckAddress) public view returns (bool){
-        uint256 amount = amountTokens(toCheckAddress);
-        return amount >= amountRequiredTier1 || whitelistTierOne[toCheckAddress];
-    }
-
-    function isEligibleInTier2(address toCheckAddress) public view returns (bool){
-        uint256 amount = amountTokens(toCheckAddress);
-
-        return amount >= amountRequiredTier2 || whitelistTierTwo[toCheckAddress];
-    }
-
-    function isEligibleInTier3(address toCheckAddress) public view returns (bool){
-        uint256 amount = amountTokens(toCheckAddress);
-
-        return amount >= amountRequiredTier3 || whitelistTierThree[toCheckAddress];
-    }
 }
