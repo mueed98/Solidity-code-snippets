@@ -502,6 +502,8 @@ interface IERC20 {
     );
 }
 
+/*----------------------------------------------------------------------------------------------------------------*/
+
 abstract contract constructorLibrary {
     
     struct parameter {
