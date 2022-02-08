@@ -2308,25 +2308,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
     //send BUSD to the contract address
     //used to participate in the public sale according to your tier
     //main logic of IDO called and implemented here
-    function participateAndPay(uint256 value) public {
-        
-        if ( value >= minBUSDvalue_TierThree ) { // Adding to Tier 3
-            participateAndPay(value, 3);
-        }
-
-        else if ( value >= minBUSDvalue_TierTwo  ) { // Adding to Tier 2
-             participateAndPay(value, 2);
-        }
-
-        else if ( value >= minBUSDvalue_TierOne ) { // Adding to Tier 1
-             participateAndPay(value, 1);
-        }
-        else 
-            revert("Value sent is less than any Tier");
-
-        
-    }
-
     function participateAndPay(uint256 value, uint256 _tierID) public {
         require(block.timestamp >= saleStartTime, "Sale is not yet started"); // solhint-disable
         require(block.timestamp <= saleEndTime, "Sale is closed"); // solhint-disable
@@ -2335,7 +2316,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
         require ( BUSDToken.allowance(msg.sender, address(this)) >= value, "Not enough allowance given for value to participate" );
 
         if ( _tierID == 3 ) { // Adding to Tier 3
-            require( value < minBUSDvalue_TierThree , "Value sent less than Tier 3" ) ;
+            require( value == minBUSDvalue_TierThree , "Value sent less than Tier 3" ) ;
             require( buyInOneTier[msg.sender].add(value) <= maxAllocaPerUserTierOne,"buyTokens:You are investing more than your tier-1 limit!" );
             require( buyInOneTier[msg.sender].add(value) >= minAllocaPerUserTierOne, "buyTokens:You are investing less than your tier-1 limit!" );
             
@@ -2350,7 +2331,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
         }
 
         else if ( _tierID == 2 ) { // Adding to Tier 2
-            require( value < minBUSDvalue_TierTwo , "Value sent less than Tier 2" ) ;
+            require( value == minBUSDvalue_TierTwo , "Value sent less than Tier 2" ) ;
             require( buyInTwoTier[msg.sender].add(value) <= maxAllocaPerUserTierTwo, "buyTokens:You are investing more than your tier-2 limit!");
             require( buyInTwoTier[msg.sender].add(value) >= minAllocaPerUserTierTwo, "buyTokens:You are investing less than your tier-2 limit!");
             
@@ -2363,7 +2344,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
         }
 
         else if ( _tierID == 1 ) { // Adding to Tier 1
-            require( value < minBUSDvalue_TierOne , "Value sent less than Tier 1" ) ;
+            require( value == minBUSDvalue_TierOne , "Value sent less than Tier 1" ) ;
             require( buyInThreeTier[msg.sender].add(value) <= maxAllocaPerUserTierThree, "buyTokens:You are investing more than your tier-3 limit!");
             require( buyInThreeTier[msg.sender].add(value) >= minAllocaPerUserTierThree, "buyTokens:You are investing less than your tier-3 limit!");
             
@@ -2376,7 +2357,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
         }
         else 
             revert("No Tier with that id");
-
         
     }
 
