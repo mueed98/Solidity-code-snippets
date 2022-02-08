@@ -2305,6 +2305,12 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
         BUSDToken.transfer(recipient, amount);
     }
 
+    function set_minBUSDvaluePerTier(uint256 _minBUSDvalue_TierOne, uint256 _minBUSDvalue_TierTwo, uint256 _minBUSDvalue_TierThree ) public onlyOwner{
+        minBUSDvalue_TierOne = _minBUSDvalue_TierOne;
+        minBUSDvalue_TierTwo = _minBUSDvalue_TierTwo;
+        minBUSDvalue_TierThree = _minBUSDvalue_TierThree;
+    }
+
     //send BUSD to the contract address
     //used to participate in the public sale according to your tier
     //main logic of IDO called and implemented here
@@ -2313,7 +2319,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
         require(block.timestamp <= saleEndTime, "Sale is closed"); // solhint-disable
         require( totalBUSDReceivedInAllTier.add(value) <= maxCap, "buyTokens: purchase would exceed max cap");
         require(finalizedDone == false, "Already Sale has Been Finalized And Cannot Participate Now");
-        require ( BUSDToken.allowance(msg.sender, address(this)) >= value, "Not enough allowance given for value to participate" );
+        require( BUSDToken.allowance(msg.sender, address(this)) >= value, "Not enough allowance given for value to participate" );
 
         if ( _tierID == 3 ) { // Adding to Tier 3
             require( value == minBUSDvalue_TierThree , "Value sent less than Tier 3" ) ;
