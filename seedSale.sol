@@ -2203,17 +2203,10 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
     uint256 public minBUSDvalue_TierTwo;
     uint256 public minBUSDvalue_TierThree;
 
-    // amount of tokens required to participate in respective tiers
-    // uint256 public amountRequiredTier1;
-    // uint256 public amountRequiredTier2;
-    // uint256 public amountRequiredTier3;
-
     //mapping the user purchase per tier
     mapping(address => uint256) public buyInOneTier;
     mapping(address => uint256) public buyInTwoTier;
     mapping(address => uint256) public buyInThreeTier;
-
-    // mapping(address => bool) public alreadyWhitelisted;
 
     bool public tierTransfer = false;
 
@@ -2238,7 +2231,13 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
     event ClaimedBUSD(uint256 timestamp, uint256 amount);
 
     // CONSTRUCTOR
-    constructor(parameter memory p, address payable _launchpadOwner, uint256 _launchPadFeePercentage) {
+    constructor() {
+        
+
+    }
+
+    // TEST FUNCTION : REMOVE AFTER TESTING
+    function setup(parameter memory p, address payable _launchpadOwner, uint256 _launchPadFeePercentage) public onlyOwner {
         NAME_OF_PROJECT = p.nameOfProject; // name of the project to do IDO of
 
         // nativeToken = IERC20(0xB7809aDa6ef0CB220886C8A8D997eab72BECBE4d);     //TODO: temp add your own token here
@@ -2253,8 +2252,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
         maxCap = numberOfIdoTokensToSell * tokenPriceInBUSD; //18 decimals
 
         saleStartTime = p._saleStartTime; //main sale start time
-
-
 
         saleEndTime = p._saleEndTime; //main sale end time
 
@@ -2295,22 +2292,6 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
     }
 
 
-    /**
-     * @dev Replacement for Solidity's `transfer`: sends `amount` wei to
-     * `recipient`, forwarding all available gas and reverting on errors.
-     *
-     * https://eips.ethereum.org/EIPS/eip-1884[EIP1884] increases the gas cost
-     * of certain opcodes, possibly making contracts go over the 2300 gas limit
-     * imposed by `transfer`, making them unable to receive funds via
-     * `transfer`. {sendValue} removes this limitation.
-     *
-     * https://diligence.consensys.net/posts/2019/09/stop-using-soliditys-transfer-now/[Learn more].
-     *
-     * IMPORTANT: because control is transferred to `recipient`, care must be
-     * taken to not create reentrancy vulnerabilities. Consider using
-     * {ReentrancyGuard} or the
-     * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
-     */
     function sendValue(address payable recipient, uint256 amount) internal {
         require( address(this).balance >= amount, "Address: insufficient balance");
 
@@ -2328,16 +2309,33 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
     //used to participate in the public sale according to your tier
     //main logic of IDO called and implemented here
     function participateAndPay(uint256 value) public {
-        require(block.timestamp >= saleStartTime, "The sale is not started yet "); // solhint-disable
-        require(block.timestamp <= saleEndTime, "The sale is closed"); // solhint-disable
+        
+        if ( value >= minBUSDvalue_TierThree ) { // Adding to Tier 3
+            participateAndPay(value, 3);
+        }
+
+        else if ( value >= minBUSDvalue_TierTwo  ) { // Adding to Tier 2
+             participateAndPay(value, 2);
+        }
+
+        else if ( value >= minBUSDvalue_TierOne ) { // Adding to Tier 1
+             participateAndPay(value, 1);
+        }
+        else 
+            revert("Value sent is less than any Tier");
+
+        
+    }
+
+    function participateAndPay(uint256 value, uint256 _tierID) public {
+        require(block.timestamp >= saleStartTime, "Sale is not yet started"); // solhint-disable
+        require(block.timestamp <= saleEndTime, "Sale is closed"); // solhint-disable
         require( totalBUSDReceivedInAllTier.add(value) <= maxCap, "buyTokens: purchase would exceed max cap");
-        require(finalizedDone == false, 'Already Sale has Been Finalized And Cannot Participate Now');
+        require(finalizedDone == false, "Already Sale has Been Finalized And Cannot Participate Now");
         require ( BUSDToken.allowance(msg.sender, address(this)) >= value, "Not enough allowance given for value to participate" );
 
- 
-
-
-        if ( value >= minBUSDvalue_TierThree ) { // Adding to Tier 3
+        if ( _tierID == 3 ) { // Adding to Tier 3
+            require( value < minBUSDvalue_TierThree , "Value sent less than Tier 3" ) ;
             require( buyInOneTier[msg.sender].add(value) <= maxAllocaPerUserTierOne,"buyTokens:You are investing more than your tier-1 limit!" );
             require( buyInOneTier[msg.sender].add(value) >= minAllocaPerUserTierOne, "buyTokens:You are investing less than your tier-1 limit!" );
             
@@ -2351,7 +2349,8 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
             return;
         }
 
-        else if ( value >= minBUSDvalue_TierTwo  ) { // Adding to Tier 2
+        else if ( _tierID == 2 ) { // Adding to Tier 2
+            require( value < minBUSDvalue_TierTwo , "Value sent less than Tier 2" ) ;
             require( buyInTwoTier[msg.sender].add(value) <= maxAllocaPerUserTierTwo, "buyTokens:You are investing more than your tier-2 limit!");
             require( buyInTwoTier[msg.sender].add(value) >= minAllocaPerUserTierTwo, "buyTokens:You are investing less than your tier-2 limit!");
             
@@ -2363,7 +2362,8 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
             return;
         }
 
-        else if ( value >= minBUSDvalue_TierOne ) { // Adding to Tier 1
+        else if ( _tierID == 1 ) { // Adding to Tier 1
+            require( value < minBUSDvalue_TierOne , "Value sent less than Tier 1" ) ;
             require( buyInThreeTier[msg.sender].add(value) <= maxAllocaPerUserTierThree, "buyTokens:You are investing more than your tier-3 limit!");
             require( buyInThreeTier[msg.sender].add(value) >= minAllocaPerUserTierThree, "buyTokens:You are investing less than your tier-3 limit!");
             
@@ -2375,7 +2375,7 @@ contract ProjectStarterLaunchPad is Ownable, constructorLibrary, ReentrancyGuard
             return;
         }
         else 
-            revert("Value sent is less than any Tier, Send as per Tiers to Participate");
+            revert("No Tier with that id");
 
         
     }
