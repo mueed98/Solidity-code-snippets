@@ -1,13 +1,18 @@
-// SPDX-License-Identifier: MIT
 
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
 
 contract StakingToken is  Ownable{
+
+	IERC20 agro = IERC20(0xd9145CCE52D386f254917e481eB44e9943F39138);
+    // 0x0000000000000000000000000000000000000000
 
     using Counters for Counters.Counter;
     Counters.Counter private refererCounter;
@@ -49,7 +54,7 @@ contract StakingToken is  Ownable{
     }
 
 
-    IERC20 agro = IERC20(0xc36e9585D3eDdd9BEE67aA809775e330F665f102);
+
 
 
 
@@ -149,6 +154,7 @@ contract StakingToken is  Ownable{
     }
 
     function currentRewards(address _user ) public view returns(uint256) {
+        console.log("Current Rewards = " , user_list[_user].accumulatedReward + calculateReward(_user));
         return  user_list[_user].accumulatedReward + calculateReward(_user);
     }
 
@@ -161,6 +167,10 @@ contract StakingToken is  Ownable{
         require(w_reward>0 , "No reward to withdraw");
         agro.transferFrom (admin, msg.sender, w_reward);
 
+    }
+
+    function test() public {
+            stake( 10000000000000000000000000, 0, 0x0000000000000000000000000000000000000000);
     }
 
     function stake(uint256 _stake, uint256 _package, address _referer) public {
@@ -248,15 +258,19 @@ contract StakingToken is  Ownable{
     function calculateReward (address _stakeholder) view private returns (uint256){
             uint256 roi = 0;
             uint256 time = block.timestamp - user_list[_stakeholder].rewardtime;
+            console.log("Time = ", time);
             
             if (user_list[_stakeholder].package == 0 ) { // STARTERS 
-                roi = time / APY_time * ( user_list[_stakeholder].stakedAmount * STARTERS_APY/100 ) ;
+                roi = time  * ( user_list[_stakeholder].stakedAmount * STARTERS_APY/100 )  ;
+                roi = roi / APY_time;
             }
             if (user_list[_stakeholder].package == 1 ) { // RIDE
-                 roi = time / APY_time * ( user_list[_stakeholder].stakedAmount * RIDE_APY/100 ) ;
+                 roi = time * ( user_list[_stakeholder].stakedAmount * RIDE_APY/100 ) ;
+                 roi = roi / APY_time;
             }
             if (user_list[_stakeholder].package == 2 ) { // FLIGHT
-                roi = time / APY_time * ( user_list[_stakeholder].stakedAmount * FLIGHT_APY/100 ) ;
+                roi = time * ( user_list[_stakeholder].stakedAmount * FLIGHT_APY/100 ) ;
+                roi = roi / APY_time;
             }
 
             return roi; 
