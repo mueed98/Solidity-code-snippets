@@ -1,6 +1,5 @@
 /* 
-Remaining Implementation :
-- Fee to admin remaining 
+Remaining Implementation : 
 - buyer gig making flow
 
 */
