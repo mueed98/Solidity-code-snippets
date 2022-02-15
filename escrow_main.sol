@@ -1,14 +1,21 @@
+/* 
+Remaining Implementation :
+- Fee to admin remaining 
+- buyer gig making flow
+
+*/
+
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "hardhat/console.sol";
 
 
-contract escrow_main is Ownable,  ReentrancyGuard {
+contract escrow_main is Ownable,  ReentrancyGuard, AccessControl {
 
     IERC20 agro = IERC20(0xd9145CCE52D386f254917e481eB44e9943F39138);
 
@@ -16,6 +23,7 @@ contract escrow_main is Ownable,  ReentrancyGuard {
     Counters.Counter public _gigCounter;
 
     uint256 public platformFee;
+    address public platformFeeAccount;
 
     struct gig {
         address seller;
@@ -33,19 +41,32 @@ contract escrow_main is Ownable,  ReentrancyGuard {
     mapping(uint256 => mapping(uint256 => bool) ) milestoneApprovedByBuyer; // gig id => milestone id => (true/false)
 
     constructor() {
-        platformFee = 100; // 100 wei
+        _setupRole(DEFAULT_ADMIN_ROLE, owner() );
+        _setRoleAdmin(DEFAULT_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
 
-        test_seller();
+        platformFee = 100; // 100 wei
+        platformFeeAccount = owner();
+
     }
 
-    function set_platformFee(uint256 _platformFee) public onlyOwner {
+    function set_platformFee(uint256 _platformFee) public onlyRole(DEFAULT_ADMIN_ROLE) {
         platformFee = _platformFee;
+    }
+
+    function set_platformFeeAccount(address _platformFeeAccount) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        platformFeeAccount = _platformFeeAccount;
+    }
+
+    function test_both() public {
+        test_seller();
+        test_buyer();
+
     }
 
     function test_seller() public {
 
         gig memory temp;
-        temp.buyer = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2;
+        temp.buyer = 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;
         string[] memory m_temp = new string[](2);
         m_temp[0] = "milestone 1";
         m_temp[1] = "milestone 2";
@@ -66,6 +87,7 @@ contract escrow_main is Ownable,  ReentrancyGuard {
     function test_buyer() public {
         
         buyer_approveGig(1);
+        buyer_approveMilestone(1,1);
         buyer_approveMilestone(1,0);
 
 
@@ -127,14 +149,15 @@ contract escrow_main is Ownable,  ReentrancyGuard {
 
         require ( agro.allowance(msg.sender, address(this)) >= totalFee , "Allowance not given");
 
-        agro.transferFrom( msg.sender, address(this), totalFee );
+        agro.transferFrom( msg.sender, platformFeeAccount , platformFee );
+        agro.transferFrom( msg.sender, address(this), totalFee - platformFee  );
         
 
         gigMap[_id].approvedByBuyer = true;
 
         console.log("_buyer_approveGig( )_");
         console.log("gigMap[_id].approvedByBuyer ", gigMap[_id].approvedByBuyer);
-        console.log("totalFee taken from  ", gigMap[_id].buyer , " = " ,totalFee);
+        console.log("Escrow taken from  ", gigMap[_id].buyer , " = " ,totalFee);
         console.log("agro.blanceOf(address(this) =  ", agro.balanceOf(address(this)) ) ;
 
     }
