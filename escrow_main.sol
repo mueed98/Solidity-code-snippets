@@ -30,15 +30,19 @@ contract escrow_main is Ownable,  ReentrancyGuard {
 
     mapping(uint256 => gig ) public gigMap ;
 
+    mapping(uint256 => mapping(uint256 => bool) ) milestoneApprovedByBuyer; // gig id => milestone id => (true/false)
+
     constructor() {
         platformFee = 100; // 100 wei
+
+        test_seller();
     }
 
     function set_platformFee(uint256 _platformFee) public onlyOwner {
         platformFee = _platformFee;
     }
 
-    function test() public {
+    function test_seller() public {
 
         gig memory temp;
         temp.buyer = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2;
@@ -55,37 +59,68 @@ contract escrow_main is Ownable,  ReentrancyGuard {
 
         uint256 id_temp;
         id_temp = seller_makeGig(temp.buyer, temp.milestones, temp.pricePerMilestone);
-        seeGigStatus( id_temp );
+
+
+    }
+
+    function test_buyer() public {
+        
+        buyer_approveGig(1);
+        buyer_approveMilestone(1,0);
 
 
     }
 
     function seller_makeGig( address _buyer, string[] memory milestones, uint256[] memory pricePerMilestone ) public returns(uint256 gig_id) {
+        require( pricePerMilestone.length == milestones.length , "Array length not same" );
+
         _gigCounter.increment();
+
         gigMap[_gigCounter.current()] = gig( msg.sender, _buyer, true, false, true, milestones, pricePerMilestone, block.timestamp);
 
         return _gigCounter.current();
 
     }
 
-    function seeGigStatus(uint256 _id) public view returns(bool _approvedBySeller, bool _approvedByBuyer) {
-        console.log("_seeGigStatus( )_");
+    function seller_flipGigStatus(uint256 _id) public {
+        require( gigMap[_id].seller == msg.sender , "Not a seller of this Gig");
+        require( gigMap[_id].approvedByBuyer == false , "Cannot change Status. Buyer accepted Gig");
 
-        _approvedBySeller = gigMap[_id].approvedBySeller;
-        _approvedByBuyer = gigMap[_id].approvedByBuyer;
+        console.log( "gigMap[_id].gigActive ", gigMap[_id].gigActive );
+        
+        gigMap[_id].gigActive = !gigMap[_id].gigActive;  
 
+        console.log( "gigMap[_id].gigActive ", gigMap[_id].gigActive );
 
-        console.log("_approvedBySeller ", _approvedBySeller);
-        console.log("_approvedByBuyer ", _approvedByBuyer);
-        return ( _approvedBySeller, _approvedByBuyer );
     }
 
-    function buyer_approveGig(uint256 _id) public {
+
+    function buyer_approveMilestone(uint256 _gigId, uint256 _milestoneId) public nonReentrant() {
+        require( gigMap[_gigId].buyer == msg.sender , "Not a buyer of this Gig");
+        require( milestoneApprovedByBuyer[_gigId ][ _milestoneId ] == false, "Milstone already approved");
+        require( _milestoneId >=0 &&  _milestoneId < gigMap[_gigId].pricePerMilestone.length, "Undefined milstone id");
+        require( gigMap[_gigId].approvedByBuyer == true , "Gig not Approved by buyer");
+
+        console.log("agro.blanceOf(address(this) =  ", agro.balanceOf(address(this)) ) ;
+
+        milestoneApprovedByBuyer[_gigId ][ _milestoneId ] = true;
+        agro.transfer( gigMap[_gigId].seller , gigMap[_gigId].pricePerMilestone[ _milestoneId ] );
+
+
+        console.log("Given to ", gigMap[_gigId].seller, " = ", gigMap[_gigId].pricePerMilestone[ _milestoneId ]);
+        console.log("agro.blanceOf(address(this) =  ", agro.balanceOf(address(this)) ) ;
+
+
+    }
+
+    function buyer_approveGig(uint256 _id) public nonReentrant() {
 
         require( gigMap[_id].buyer == msg.sender , "Not a buyer of this Gig");
         require( gigMap[_id].gigActive == true, "Gig is cancelled by seller");
+        require( gigMap[_id].approvedByBuyer == false , "Already Approved by buyer");
 
         uint256 totalFee =  platformFee ;
+
         for(uint256 i=0; i<gigMap[_id].milestones.length; i++){
             totalFee += gigMap[_id].pricePerMilestone[i]; 
         }
@@ -99,7 +134,7 @@ contract escrow_main is Ownable,  ReentrancyGuard {
 
         console.log("_buyer_approveGig( )_");
         console.log("gigMap[_id].approvedByBuyer ", gigMap[_id].approvedByBuyer);
-        console.log("totalFee Transferred ", totalFee);
+        console.log("totalFee taken from  ", gigMap[_id].buyer , " = " ,totalFee);
         console.log("agro.blanceOf(address(this) =  ", agro.balanceOf(address(this)) ) ;
 
     }
