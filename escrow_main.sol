@@ -91,7 +91,11 @@ contract escrow_main is Ownable,  ReentrancyGuard, AccessControl {
 
 
     }
+/*
 
+--------- FLOW : SELLER MAKING A GIG ---------
+
+*/
     function seller_makeGig( address _buyer, string[] memory milestones, uint256[] memory pricePerMilestone ) public returns(uint256 gig_id) {
         require( pricePerMilestone.length == milestones.length , "Array length not same" );
 
@@ -121,10 +125,12 @@ contract escrow_main is Ownable,  ReentrancyGuard, AccessControl {
         require( milestoneApprovedByBuyer[_gigId ][ _milestoneId ] == false, "Milstone already approved");
         require( _milestoneId >=0 &&  _milestoneId < gigMap[_gigId].pricePerMilestone.length, "Undefined milstone id");
         require( gigMap[_gigId].approvedByBuyer == true , "Gig not Approved by buyer");
+        require( gigMap[_gigId].approvedBySeller == true , "Gig not Approved by Seller");
 
         console.log("agro.blanceOf(address(this) =  ", agro.balanceOf(address(this)) ) ;
 
         milestoneApprovedByBuyer[_gigId ][ _milestoneId ] = true;
+        // giving milestone money to Seller
         agro.transfer( gigMap[_gigId].seller , gigMap[_gigId].pricePerMilestone[ _milestoneId ] );
 
 
@@ -139,6 +145,7 @@ contract escrow_main is Ownable,  ReentrancyGuard, AccessControl {
         require( gigMap[_id].buyer == msg.sender , "Not a buyer of this Gig");
         require( gigMap[_id].gigActive == true, "Gig is cancelled by seller");
         require( gigMap[_id].approvedByBuyer == false , "Already Approved by buyer");
+        require( gigMap[_id].approvedBySeller == true , "Gig not Approved by Seller");
 
         uint256 totalFee =  platformFee ;
 
@@ -148,8 +155,8 @@ contract escrow_main is Ownable,  ReentrancyGuard, AccessControl {
 
         require ( agro.allowance(msg.sender, address(this)) >= totalFee , "Allowance not given");
 
-        agro.transferFrom( msg.sender, platformFeeAccount , platformFee );
-        agro.transferFrom( msg.sender, address(this), totalFee - platformFee  );
+        agro.transferFrom( msg.sender, platformFeeAccount , platformFee ); // Taking platform Fee from buyer
+        agro.transferFrom( msg.sender, address(this), totalFee - platformFee  ); // Taking money into Escrow
         
 
         gigMap[_id].approvedByBuyer = true;
@@ -161,7 +168,11 @@ contract escrow_main is Ownable,  ReentrancyGuard, AccessControl {
 
     }
 
+/*
 
+--------- FLOW : Buyer MAKING A GIG ---------
+
+*/
 
 
 
