@@ -5,15 +5,22 @@ import "@openzeppelin/contracts@4.5.0/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts@4.5.0/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts@4.5.0/security/Pausable.sol";
 import "@openzeppelin/contracts@4.5.0/access/AccessControl.sol";
+import "@openzeppelin/contracts@4.5.0/access/Ownable.sol";
 
-contract MarvellexGold is ERC20, ERC20Burnable, Pausable, AccessControl {
+contract MarvellexGold is ERC20, ERC20Burnable, Ownable, Pausable, AccessControl {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     constructor() ERC20("Marvellex Gold", "MLXG") {
+
+        _setupRole(DEFAULT_ADMIN_ROLE, owner());
+        _setRoleAdmin(PAUSER_ROLE, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(MINTER_ROLE, DEFAULT_ADMIN_ROLE);
+
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
+
     }
 
     function pause() public onlyRole(PAUSER_ROLE) {
