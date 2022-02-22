@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract MarvellexGold is ERC20, ERC20Burnable, Ownable, Pausable, AccessControl {
+contract MLXG_token is ERC20, ERC20Burnable, Ownable, Pausable, AccessControl {
     
     using Counters for Counters.Counter;
     Counters.Counter private certificateCounter;
@@ -53,7 +53,7 @@ contract MarvellexGold is ERC20, ERC20Burnable, Ownable, Pausable, AccessControl
     }
 
     function mint(address to, bytes memory bullion_id, bytes memory metadata ) public onlyRole(MINTER_ROLE)  whenNotPaused() returns (uint256) {
-        require(isUnique_by_Hash(bullion_id) == true, "Bullion id not Unique") ;
+        require(isUnique_by_Hash(bullion_id) == true, "MLXG_token: Bullion id not Unique") ;
         certificate_hashes[keccak256(bullion_id)] = true;
 
         certificateCounter.increment();
@@ -61,7 +61,7 @@ contract MarvellexGold is ERC20, ERC20Burnable, Ownable, Pausable, AccessControl
 
         certificate_record [ id ] = certificate(true, id, weight_of_gold, bullion_id,  metadata);
 
-        _mint(to, weight_of_gold); // 400 tokens will be minted;
+        _mint(to, 400 ether); // 400 tokens will be minted;
 
         return id;
     }
