@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts@4.5.0/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts@4.5.0/token/ERC20/extensions/ERC20Burnable.sol";
-import "@openzeppelin/contracts@4.5.0/security/Pausable.sol";
-import "@openzeppelin/contracts@4.5.0/access/AccessControl.sol";
-import "@openzeppelin/contracts@4.5.0/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract MarvellexGold is ERC20, ERC20Burnable, Ownable, Pausable, AccessControl {
@@ -53,30 +53,24 @@ contract MarvellexGold is ERC20, ERC20Burnable, Ownable, Pausable, AccessControl
     }
 
     function mint(address to, bytes memory bullion_id, bytes memory metadata ) public onlyRole(MINTER_ROLE)  whenNotPaused() returns (uint256) {
-        require(Unique_by_Hash(bullion_id) == true, "Bullion id not Unique") ;
+        require(isUnique_by_Hash(bullion_id) == true, "Bullion id not Unique") ;
+        certificate_hashes[keccak256(bullion_id)] = true;
 
         certificateCounter.increment();
         uint256 id = certificateCounter.current();
 
-        certificate_record [ id ].exists = true;
-        certificate_record [ id ].certificate_id = id;
-        certificate_record [ id ].bullion_id = bullion_id;
-        certificate_record [ id ].weight_of_gold = weight_of_gold;
+        certificate_record [ id ] = certificate(true, id, weight_of_gold, bullion_id,  metadata);
 
         _mint(to, weight_of_gold); // 400 tokens will be minted;
 
         return id;
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount)
-        internal
-        whenNotPaused
-        override
-    {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal whenNotPaused override {
         super._beforeTokenTransfer(from, to, amount);
     }
 
-    function Unique_by_Hash(bytes memory _tokenURI ) private view returns (bool) {
+    function isUnique_by_Hash(bytes memory _tokenURI ) private view returns (bool) {
         
         if (certificate_hashes[keccak256(_tokenURI)] == true){
             return false;
